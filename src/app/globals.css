@@ -1,25 +1,16 @@
 :root {
-  --bg: #fbfbf9;
-  --surface: #ffffff;
-  --ink: #14151a;
-  --muted: #5f6470;
-  --faint: #8b909c;
-  --line: #e3e3de;
-  --accent: #1b4dd8;
-  --accent-soft: #eef2ff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e0f12;
-    --surface: #15171c;
-    --ink: #f2f2ef;
-    --muted: #a2a7b2;
-    --faint: #767b86;
-    --line: #24262c;
-    --accent: #7ea2ff;
-    --accent-soft: #171c2b;
-  }
+  --paper: #efede4;
+  --paper-raised: #f8f6ef;
+  --ink: #0e1014;
+  --muted: #62645f;
+  --line: #cecbc0;
+  --line-strong: #aba89e;
+  --orange: #ff6940;
+  --orange-deep: #aa3118;
+  --lime: #d3ff50;
+  --blue: #3557b7;
+  --blue-deep: #142757;
+  --cyan: #37e2ed;
 }
 
 * {
@@ -31,8 +22,8 @@
 html {
   min-height: 100%;
   scroll-behavior: smooth;
-  scroll-padding-top: 2rem;
-  background: var(--bg);
+  scroll-padding-top: 5rem;
+  background: var(--ink);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -45,11 +36,10 @@ body {
 body {
   min-height: 100%;
   color: var(--ink);
-  background: var(--bg);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Arial, sans-serif;
+  background: var(--paper);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -59,25 +49,27 @@ a {
   text-decoration: none;
 }
 
-:focus-visible {
-  border-radius: 2px;
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  max-width: 100%;
 }
 
 ::selection {
-  color: #fff;
-  background: var(--accent);
+  color: var(--ink);
+  background: var(--lime);
 }
 
-@media (prefers-color-scheme: dark) {
-  ::selection {
-    color: #0e0f12;
-  }
+:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * ,
+  *,
   *::before,
   *::after {
     scroll-behavior: auto !important;

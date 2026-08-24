@@ -5,62 +5,86 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "swap",
+  display: "optional",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "swap",
+  display: "optional",
 });
 
 const DESCRIPTION =
-  "Oney Erge — AI Manager, Language Modeling Engineering. PhD, UT Austin. Language models, agent systems, and hybrid physics/data modeling.";
+  "Oney Erge is an applied AI researcher and engineer building agent systems, local inference tools, robotics simulations, and hybrid physical models.";
+const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneyerge.com"),
   title: {
-    default: "Oney Erge — Language Models & Agent Systems",
-    template: "%s · Oney Erge",
+    default: "Oney Erge | Applied AI, Agents, and Physical Systems",
+    template: "%s | Oney Erge",
   },
   description: DESCRIPTION,
+  alternates: {
+    canonical: "https://oneyerge.com/",
+  },
   authors: [{ name: "Oney Erge", url: "https://github.com/oney-erge" }],
   creator: "Oney Erge",
   keywords: [
     "Oney Erge",
-    "language models",
     "agent systems",
+    "local AI",
+    "language models",
+    "AI inference",
+    "robotics simulation",
     "machine learning",
-    "hybrid modeling",
+    "physics-informed machine learning",
+    "hybrid physical modeling",
     "open source",
-    "Python",
   ],
   openGraph: {
-    title: "Oney Erge — Language Models & Agent Systems",
+    title: "Oney Erge | Applied AI, Agents, and Physical Systems",
     description: DESCRIPTION,
     type: "profile",
     locale: "en_US",
     siteName: "Oney Erge",
     url: "https://oneyerge.com",
+    images: [
+      {
+        url: "/media/oney-erge-social.png",
+        width: 1200,
+        height: 630,
+        alt: "Oney Erge, applied AI researcher and engineer building grounded AI systems",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
-    title: "Oney Erge — Language Models & Agent Systems",
+    card: "summary_large_image",
+    title: "Oney Erge | Applied AI, Agents, and Physical Systems",
     description: DESCRIPTION,
+    images: ["/media/oney-erge-social.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
+  verification: GOOGLE_VERIFICATION
+    ? { google: GOOGLE_VERIFICATION }
+    : undefined,
+  category: "technology",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfbf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e0f12" },
-  ],
+  themeColor: "#0e1014",
 };
 
 export default function RootLayout({

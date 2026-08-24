@@ -1,273 +1,343 @@
+import Image from "next/image";
+import { ProjectVisual } from "@/components/project-visual";
+import {
+  featuredProjects,
+  moreProjects,
+  type Project,
+} from "@/data/projects";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
 const SCHOLAR = "https://scholar.google.com/citations?user=x0tT7L4AAAAJ";
 const LINKEDIN = "https://www.linkedin.com/in/oneyerge/";
 
-type Project = {
-  name: string;
-  repo: string;
-  blurb: string;
-  tags: string[];
-  stars?: number;
-};
-
-// The six pinned repositories, in the order they appear on the GitHub profile.
-const projects: Project[] = [
+const papers = [
   {
-    name: "YBM",
-    repo: "YBM",
-    blurb:
-      "A local agent-control system driven from a messaging app. Applies policy, schedules work, and invokes coding agents and tools across the browser, desktop, and filesystem.",
-    tags: ["Python", "FastAPI", "Agents"],
-    stars: 1,
-  },
-  {
-    name: "Afterimage",
-    repo: "Afterimage",
-    blurb:
-      "Runs a 27B model on an 8 GB GPU by compressing weights losslessly and streaming them, caching what the weights did rather than the weights themselves. No quantization, no accuracy loss.",
-    tags: ["Python", "Inference", "PyTorch"],
-  },
-  {
-    name: "LocalDeploy",
-    repo: "LocalDeploy",
-    blurb:
-      "Discover, run, monitor, and benchmark models on your own hardware, through a browser UI and an OpenAI-compatible API. Integrates Ollama, llama.cpp, LM Studio, and vLLM.",
-    tags: ["Python", "Local models", "Benchmarking"],
-  },
-  {
-    name: "SegCraft",
-    repo: "SegCraft-Semantic-Segmentation",
-    blurb:
-      "A config-first semantic segmentation toolkit: training, evaluation, and image or video inference driven entirely from reusable YAML workflows.",
-    tags: ["PyTorch", "Computer vision"],
-    stars: 2,
-  },
-  {
-    name: "Agentarium",
-    repo: "Agentarium",
-    blurb:
-      "A visual physics sandbox where agents build objects in small simulated worlds, run them, observe the outcome, and revise their designs across multiple attempts.",
-    tags: ["Python", "Simulation", "Agents"],
-  },
-  {
-    name: "Creature-Lab",
-    repo: "Creature-Lab",
-    blurb:
-      "Design, simulate, evolve, and replay modular robot-creatures. Every creature, task, controller, and episode stays inspectable and reproducible.",
-    tags: ["PyBullet", "Robotics"],
-  },
-];
-
-type Paper = {
-  title: string;
-  year: string;
-  citations: number;
-};
-
-// Most-cited work, ordered newest first so the physics -> hybrid -> ML arc reads top to bottom.
-const papers: Paper[] = [
-  {
+    year: "2022",
     title:
       "Combining physics-based and data-driven modeling in well construction: Hybrid fluid dynamics modeling",
-    year: "2022",
-    citations: 65,
   },
   {
+    year: "2022",
+    title:
+      "Well Construction Action Planning and Automation through Finite-Horizon Sequential Decision-Making",
+  },
+  {
+    year: "2020",
     title:
       "Modeling the effects of drillstring eccentricity, pipe rotation and annular blockage on cuttings transport in deviated wells",
-    year: "2020",
-    citations: 49,
-  },
-  {
-    title:
-      "The effects of drillstring eccentricity, rotation, and buckling configurations on annular frictional pressure losses while circulating yield-power-law fluids",
-    year: "2015",
-    citations: 133,
-  },
-  {
-    title:
-      "Frictional pressure loss of drilling fluids in a fully eccentric annulus",
-    year: "2015",
-    citations: 52,
-  },
-  {
-    title:
-      "Effect of drillstring deflection and rotary speed on annular frictional pressure losses",
-    year: "2013",
-    citations: 73,
   },
 ];
 
-type Role = {
-  org: string;
-  role: string;
+const background = [
+  { organization: "Deloitte", role: "AI Lead" },
+  { organization: "Elsevier", role: "Data Scientist" },
+  {
+    organization: "Robotics Startup",
+    role: "Data Scientist / Robotics Software Engineer",
+  },
+  { organization: "SLB", role: "Data Scientist / Software Engineer" },
+  { organization: "UT Austin", role: "PhD, Dynamic Systems and Control" },
+];
+
+const profileSchema = {
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  "@id": "https://oneyerge.com/#profile",
+  url: "https://oneyerge.com/",
+  name: "Oney Erge | Applied AI Researcher and Engineer",
+  dateModified: "2026-08-24",
+  mainEntity: {
+    "@type": "Person",
+    "@id": "https://oneyerge.com/#person",
+    name: "Oney Erge",
+    url: "https://oneyerge.com/",
+    image: {
+      "@type": "ImageObject",
+      url: "https://oneyerge.com/media/oney-erge-portrait.webp",
+      width: 1000,
+      height: 1501,
+    },
+    jobTitle: "Applied AI Researcher and Engineer",
+    sameAs: [GITHUB, SCHOLAR, LINKEDIN],
+    alumniOf: {
+      "@type": "CollegeOrUniversity",
+      name: "The University of Texas at Austin",
+    },
+    knowsAbout: [
+      "Agent systems",
+      "Language models",
+      "Local AI inference",
+      "Machine learning",
+      "Robotics simulation",
+      "Hybrid physics and data-driven modeling",
+    ],
+  },
 };
-
-const background: Role[] = [
-  { org: "Deloitte", role: "Senior Data Scientist, AI Operations" },
-  { org: "Elsevier", role: "Data Scientist" },
-  { org: "Advanced Robotics Group", role: "Data Scientist / Robotics Software Engineer" },
-  { org: "Schlumberger", role: "Data Scientist / Software Engineer" },
-  { org: "UT Austin", role: "PhD, Mechanical Engineering" },
-];
 
 function Arrow() {
   return (
-    <svg className={styles.arrow} viewBox="0 0 16 16" aria-hidden="true">
-      <path
-        d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 18 18" aria-hidden="true">
+      <path d="M4 14 14 4M6 4h8v8" />
     </svg>
+  );
+}
+
+function GithubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.87c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.82a9.6 9.6 0 0 1 2.5.34c1.92-1.3 2.76-1.02 2.76-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" />
+    </svg>
+  );
+}
+
+function ProjectCard({ project, wide = false }: { project: Project; wide?: boolean }) {
+  return (
+    <article className={`${styles.projectCard} ${wide ? styles.wideCard : ""}`}>
+      <ProjectVisual project={project} />
+      <div className={styles.projectCopy}>
+        <div className={styles.projectMeta}>
+          <span>{project.field}</span>
+          <span>{project.status}</span>
+        </div>
+        <h3>{project.name}</h3>
+        <p className={styles.projectHeadline}>{project.headline}</p>
+        <p className={styles.projectDescription}>{project.description}</p>
+        <p className={styles.projectProof}>{project.proof}</p>
+        <div className={styles.projectFooter}>
+          <ul aria-label={`${project.name} technologies`}>
+            {project.tags.map((tag) => (
+              <li key={tag}>{tag}</li>
+            ))}
+          </ul>
+          <div className={styles.projectLinks}>
+            <a href={`/work/${project.slug}/`}>
+              {project.name} case study <Arrow />
+            </a>
+            <a
+              href={`${GITHUB}/${project.repo}`}
+              target="_blank"
+              rel="noreferrer"
+            aria-label={`View ${project.name} source on GitHub`}
+            >
+              Source <Arrow />
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
 export default function Home() {
   return (
-    <div className={styles.page}>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(profileSchema).replace(/</g, "\\u003c"),
+        }}
+      />
       <a className={styles.skipLink} href="#work">
         Skip to selected work
       </a>
 
-      <header className={styles.intro}>
-        <img
-          className={styles.avatar}
-          src="/media/oney-erge.jpg"
-          alt=""
-          width={72}
-          height={72}
-        />
-
-        <h1>Oney Erge</h1>
-        <p className={styles.role}>
-          AI Manager, Language Modeling Engineering
-        </p>
-
-        <ul className={styles.credentials}>
-          <li>PhD, UT Austin</li>
-          <li>872 citations</li>
-          <li>h-index 15</li>
-          <li>Houston, TX</li>
-        </ul>
-
-        <p className={styles.lede}>
-          I work on language models and agent systems. Before that, roughly a
-          decade on physics-based and hybrid modeling for well construction —
-          fluid dynamics, control, and the messy business of making models
-          agree with instrumented reality.
-        </p>
-
-        <nav className={styles.links} aria-label="Profiles">
-          <a href={GITHUB} target="_blank" rel="noreferrer">
-            GitHub <Arrow />
-          </a>
-          <a href={SCHOLAR} target="_blank" rel="noreferrer">
-            Google Scholar <Arrow />
-          </a>
-          <a href={LINKEDIN} target="_blank" rel="noreferrer">
-            LinkedIn <Arrow />
-          </a>
+      <header className={styles.siteHeader} id="top">
+        <a className={styles.brand} href="#top">
+          <span className={styles.brandMark}>OE</span>
+          <span>Oney Erge</span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="#work">Work</a>
+          <a href="#research">Research</a>
+          <a href="#background">Background</a>
+          <a className={styles.headerCta} href="#contact">Contact</a>
         </nav>
       </header>
 
       <main>
-        <section className={styles.section} aria-labelledby="now-heading">
-          <h2 id="now-heading">Now</h2>
-          <p className={styles.prose}>
-            Building local-first agent tooling — systems that run models on
-            your own hardware, keep tool execution policy-bound, and stay
-            inspectable end to end. Most of it is open source below.
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>
+              <span /> Applied AI researcher and engineer
+            </p>
+            <h1>
+              AI systems,
+              <span>grounded in reality.</span>
+            </h1>
+            <p className={styles.heroIntro}>
+              I build agent systems, local inference tools, and physics-based
+              simulations. The goal is working software that can be inspected,
+              tested, and trusted.
+            </p>
+            <div className={styles.heroActions}>
+              <a className={styles.primaryButton} href="#work">
+                Explore selected work <span aria-hidden="true">↓</span>
+              </a>
+              <a className={styles.profileLink} href={GITHUB} target="_blank" rel="noreferrer">
+                <GithubIcon /> GitHub <Arrow />
+              </a>
+            </div>
+            <dl className={styles.heroProof}>
+              <div>
+                <dt>Research</dt>
+                <dd>800+ citations</dd>
+              </div>
+              <div>
+                <dt>Training</dt>
+                <dd>PhD, UT Austin</dd>
+              </div>
+              <div>
+                <dt>Current focus</dt>
+                <dd>Agents + physical systems</dd>
+              </div>
+            </dl>
+          </div>
+
+          <figure className={styles.portrait}>
+            <Image
+              src="/media/oney-erge-portrait.webp"
+              alt="Oney Erge, applied AI researcher and engineer"
+              width={1000}
+              height={1501}
+              priority
+              sizes="(max-width: 800px) 100vw, 38vw"
+            />
+            <figcaption>
+              <span>Researcher</span>
+              <span>Engineer</span>
+              <span>Builder</span>
+            </figcaption>
+          </figure>
+        </section>
+
+        <section className={styles.positioning} aria-label="Professional focus">
+          <p>Applied research becomes useful when it survives contact with an operator, a machine, and a real constraint.</p>
+          <span>01 / Systems</span>
+          <span>02 / Evidence</span>
+          <span>03 / Control</span>
+        </section>
+
+        <section className={styles.workSection} id="work">
+          <div className={styles.sectionHeading}>
+            <p className={styles.sectionNumber}>01 / Selected systems</p>
+            <h2>Built, measured, and open to inspection.</h2>
+            <p>
+              The strongest work is shown with the operating constraint it addresses,
+              not a list of technologies.
+            </p>
+          </div>
+
+          <div className={styles.featuredGrid}>
+            {featuredProjects.map((project, index) => (
+              <ProjectCard key={project.repo} project={project} wide={index === 2} />
+            ))}
+          </div>
+
+          <div className={styles.moreHeading}>
+            <h3>More experiments</h3>
+            <a href={GITHUB} target="_blank" rel="noreferrer">
+              All repositories <Arrow />
+            </a>
+          </div>
+          <div className={styles.moreGrid}>
+            {moreProjects.map((project) => (
+              <ProjectCard key={project.repo} project={project} />
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.researchSection} id="research">
+          <div className={styles.researchLead}>
+            <p className={styles.sectionNumber}>02 / Research foundation</p>
+            <h2>A researcher&apos;s standards. A builder&apos;s output.</h2>
+            <p>
+              My earlier work focused on fluid dynamics, control, automated
+              operations, and hybrid physics and data-driven models. The subject
+              has changed. The standard has not: state the assumptions, measure the
+              result, and keep the system accountable to evidence.
+            </p>
+            <a href={SCHOLAR} target="_blank" rel="noreferrer">
+              Google Scholar profile <Arrow />
+            </a>
+          </div>
+
+          <div className={styles.researchBody}>
+            <dl className={styles.researchStats}>
+              <div>
+                <dt>800+</dt>
+                <dd>citations</dd>
+              </div>
+              <div>
+                <dt>30+</dt>
+                <dd>publications</dd>
+              </div>
+              <div>
+                <dt>15</dt>
+                <dd>h-index</dd>
+              </div>
+            </dl>
+            <div className={styles.paperList}>
+              <p>Selected publications</p>
+              <ol>
+                {papers.map((paper) => (
+                  <li key={paper.title}>
+                    <span>{paper.year}</span>
+                    <p>{paper.title}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.backgroundSection} id="background">
+          <div className={styles.backgroundIntro}>
+            <p className={styles.sectionNumber}>03 / Background</p>
+            <h2>Across research, software, and applied AI.</h2>
+            <p>
+              Experience spans technical leadership, product engineering,
+              scientific publishing, robotics, and physical modeling.
+            </p>
+          </div>
+          <ol className={styles.timeline}>
+            {background.map((item, index) => (
+              <li key={item.organization}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{item.organization}</strong>
+                <p>{item.role}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className={styles.contactSection} id="contact">
+          <p className={styles.sectionNumber}>04 / Contact</p>
+          <h2>Have a hard AI problem?</h2>
+          <p>
+            I am interested in senior technical roles, research collaborations,
+            and focused product work around agent systems, local AI, evaluation,
+            simulation, and AI for physical systems.
           </p>
-        </section>
-
-        <section className={styles.section} id="work" aria-labelledby="work-heading">
-          <h2 id="work-heading">Selected work</h2>
-          <ul className={styles.projects}>
-            {projects.map((project) => (
-              <li key={project.repo}>
-                <a
-                  className={styles.project}
-                  href={`${GITHUB}/${project.repo}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <div className={styles.projectHead}>
-                    <h3>
-                      {project.name}
-                      <Arrow />
-                    </h3>
-                    {project.stars ? (
-                      <span className={styles.stars} title={`${project.stars} stars`}>
-                        ★ {project.stars}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p>{project.blurb}</p>
-                  <ul className={styles.tags}>
-                    {project.tags.map((tag) => (
-                      <li key={tag}>{tag}</li>
-                    ))}
-                  </ul>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className={styles.section} aria-labelledby="research-heading">
-          <h2 id="research-heading">Research</h2>
-          <p className={styles.prose}>
-            872 citations, h-index 15, i10-index 22. The through-line from
-            drilling fluid dynamics to hybrid physics/data modeling is the same
-            problem I work on now: getting a learned model to respect what is
-            physically true.
-          </p>
-          <ul className={styles.papers}>
-            {papers.map((paper) => (
-              <li key={paper.title}>
-                <span className={styles.year}>{paper.year}</span>
-                <span className={styles.paperTitle}>{paper.title}</span>
-                <span className={styles.cites}>{paper.citations}</span>
-              </li>
-            ))}
-          </ul>
-          <a
-            className={styles.textLink}
-            href={SCHOLAR}
-            target="_blank"
-            rel="noreferrer"
-          >
-            All publications on Google Scholar <Arrow />
-          </a>
-        </section>
-
-        <section className={styles.section} aria-labelledby="background-heading">
-          <h2 id="background-heading">Background</h2>
-          <ul className={styles.background}>
-            {background.map((item) => (
-              <li key={item.org}>
-                <span className={styles.org}>{item.org}</span>
-                <span className={styles.orgRole}>{item.role}</span>
-              </li>
-            ))}
-          </ul>
+          <div className={styles.contactActions}>
+            <a href={LINKEDIN} target="_blank" rel="noreferrer">
+              Start a conversation <Arrow />
+            </a>
+            <a href={GITHUB} target="_blank" rel="noreferrer">
+              Review the source <Arrow />
+            </a>
+          </div>
         </section>
       </main>
 
       <footer className={styles.footer}>
+        <a className={styles.brand} href="#top">
+          <span className={styles.brandMark}>OE</span>
+          <span>Oney Erge</span>
+        </a>
+        <p>Applied AI, agent systems, and physical models.</p>
         <p>© {new Date().getFullYear()} Oney Erge</p>
-        <p>
-          <a href={GITHUB} target="_blank" rel="noreferrer">
-            github.com/oney-erge
-          </a>
-        </p>
       </footer>
-    </div>
+    </>
   );
 }
