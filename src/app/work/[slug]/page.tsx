@@ -121,15 +121,14 @@ export default async function ProjectPage({ params }: Props) {
       </a>
 
       <header className={styles.header}>
-        <a className={styles.brand} href="/">
-          <span>OE</span>
-          <strong>Oney Erge</strong>
-        </a>
-        <nav aria-label="Project navigation">
-          <a href="/#work">All work</a>
-          <a href="/#research">Research</a>
-          <a className={styles.contactLink} href="/#contact">Contact</a>
-        </nav>
+        <div className={styles.headerInner}>
+          <a className={styles.brand} href="/">Oney Erge</a>
+          <nav aria-label="Project navigation">
+            <a href="/#work">Work</a>
+            <a href="/#research">Research</a>
+            <a href="/#contact">Contact</a>
+          </nav>
+        </div>
       </header>
 
       <main id="case-study">
@@ -159,7 +158,7 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           <dl className={styles.proofBar}>
             <div>
-              <dt>Search focus</dt>
+              <dt>Focus</dt>
               <dd>{project.searchIntent}</dd>
             </div>
             <div>
@@ -251,10 +250,7 @@ export default async function ProjectPage({ params }: Props) {
       </main>
 
       <footer className={styles.footer}>
-        <a className={styles.brand} href="/">
-          <span>OE</span>
-          <strong>Oney Erge</strong>
-        </a>
+        <a className={styles.brand} href="/">Oney Erge</a>
         <p>Applied AI, agent systems, and physical models.</p>
         <p>© {new Date().getFullYear()} Oney Erge</p>
       </footer>
