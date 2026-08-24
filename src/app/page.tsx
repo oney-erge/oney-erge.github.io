@@ -403,8 +403,8 @@ export default function Home() {
       </a>
       <header className={styles.siteHeader}>
         <a className={styles.wordmark} href="#top" aria-label="Oney Erge home">
-          <span>oney</span>
-          <strong>erge</strong>
+          <span>OE</span>
+          <strong>Oney Erge</strong>
         </a>
         <nav aria-label="Primary navigation">
           <a href="#work">Selected work</a>
@@ -589,8 +589,8 @@ export default function Home() {
       <footer className={styles.footer}>
         <div>
           <a className={styles.wordmark} href="#top">
-            <span>io</span>
-            <strong>driller</strong>
+            <span>OE</span>
+            <strong>Oney Erge</strong>
           </a>
           <p>Applied AI, data systems, and experiments by Oney Erge.</p>
         </div>
