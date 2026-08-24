@@ -46,7 +46,7 @@ const projects: Project[] = [
     proof:
       "Cross-source relationship discovery, evidence-bound enrichment, readiness reports, and on-prem deployment.",
     tags: ["Python", "Metadata", "RAG", "On-prem"],
-    url: "https://github.com/iodriller/MetaScout",
+    url: "https://github.com/oney-erge/MetaScout",
     visual: "metascout",
     featured: true,
     private: true,
@@ -62,7 +62,7 @@ const projects: Project[] = [
     proof:
       "Every creature, task, controller, and episode stays inspectable, reproducible, and portable.",
     tags: ["PyBullet", "Robotics", "Python", "Offline"],
-    url: "https://github.com/iodriller/Creature-Lab",
+    url: "https://github.com/oney-erge/Creature-Lab",
     visual: "creature",
     featured: true,
   },
@@ -77,7 +77,7 @@ const projects: Project[] = [
     proof:
       "Combines a FastAPI service, Streamlit dashboard, market context, journal, and reproducible analysis snapshots.",
     tags: ["FastAPI", "Streamlit", "Time series", "Local LLM"],
-    url: "https://github.com/iodriller/StockPredictor-AI-Assistant",
+    url: "https://github.com/oney-erge/StockPredictor-AI-Assistant",
     visual: "stocks",
   },
   {
@@ -91,7 +91,7 @@ const projects: Project[] = [
     proof:
       "A cross-platform desktop workbench for competitive intelligence, pilot design, and risk-aware decision support.",
     tags: ["FastAPI", "Desktop", "Research", "Strategy"],
-    url: "https://github.com/iodriller/ai-readiness-lab",
+    url: "https://github.com/oney-erge/ai-readiness-lab",
     visual: "readiness",
   },
   {
@@ -105,7 +105,7 @@ const projects: Project[] = [
     proof:
       "DuckDuckGo image collection, EfficientNet fine-tuning, a clean CLI, Python API, and Gradio demo.",
     tags: ["PyTorch", "EfficientNet", "Gradio", "Computer vision"],
-    url: "https://github.com/iodriller/image-classifier-web-search",
+    url: "https://github.com/oney-erge/image-classifier-web-search",
     visual: "classifier",
   },
   {
@@ -119,7 +119,7 @@ const projects: Project[] = [
     proof:
       "Container-ready, CI-verified, and maintained by Dependabot across Python, Node, and GitHub Actions.",
     tags: ["Vue 3", "Flask", "WebSockets", "Dependabot"],
-    url: "https://github.com/iodriller/VueJs-Flask-SocketIO-Example-Template",
+    url: "https://github.com/oney-erge/VueJs-Flask-SocketIO-Example-Template",
     visual: "socket",
   },
 ];
@@ -402,15 +402,15 @@ export default function Home() {
         Skip to selected work
       </a>
       <header className={styles.siteHeader}>
-        <a className={styles.wordmark} href="#top" aria-label="iodriller home">
-          <span>io</span>
-          <strong>driller</strong>
+        <a className={styles.wordmark} href="#top" aria-label="Oney Erge home">
+          <span>oney</span>
+          <strong>erge</strong>
         </a>
         <nav aria-label="Primary navigation">
           <a href="#work">Selected work</a>
           <a href="#principles">Principles</a>
           <a
-            href="https://github.com/iodriller"
+            href="https://github.com/oney-erge"
             target="_blank"
             rel="noreferrer"
             className={styles.githubNav}
@@ -443,12 +443,12 @@ export default function Home() {
               </a>
               <a
                 className={styles.textLink}
-                href="https://github.com/iodriller"
+                href="https://github.com/oney-erge"
                 target="_blank"
                 rel="noreferrer"
               >
                 <GithubIcon />
-                github.com/iodriller
+                github.com/oney-erge
                 <ArrowUpRight />
               </a>
             </div>
@@ -575,7 +575,7 @@ export default function Home() {
           <p>Explore the source, follow the experiments, or build from the foundations.</p>
           <h2>Six systems. One practical engineering practice.</h2>
           <a
-            href="https://github.com/iodriller"
+            href="https://github.com/oney-erge"
             target="_blank"
             rel="noreferrer"
           >
@@ -604,7 +604,7 @@ export default function Home() {
           />
           <span>
             <small>BUILT IN PUBLIC</small>
-            <b>github.com/iodriller</b>
+            <b>github.com/oney-erge</b>
           </span>
         </div>
         <p className={styles.copyright}>© 2026 Oney Erge</p>

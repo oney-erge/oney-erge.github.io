@@ -15,14 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://iodriller-projects-hub.openai.site"),
+  metadataBase: new URL("https://oneyerge.com"),
   title: {
-    default: "iodriller — Applied AI & Software Systems",
-    template: "%s · iodriller",
+    default: "Oney Erge — Applied AI & Software Systems",
+    template: "%s · Oney Erge",
   },
   description:
     "Applied AI, enterprise data, robotics, market research, and real-time software projects by Oney Erge.",
-  authors: [{ name: "Oney Erge", url: "https://github.com/iodriller" }],
+  authors: [{ name: "Oney Erge", url: "https://github.com/oney-erge" }],
   creator: "Oney Erge",
   keywords: [
     "applied AI",
@@ -33,16 +33,16 @@ export const metadata: Metadata = {
     "software engineering",
   ],
   openGraph: {
-    title: "iodriller — Useful software for messy, real-world problems.",
+    title: "Oney Erge — Useful software for messy, real-world problems.",
     description:
       "Explore six working systems across applied AI, enterprise data, market research, robotics, and real-time infrastructure.",
     type: "website",
     locale: "en_US",
-    siteName: "iodriller",
+    siteName: "Oney Erge",
   },
   twitter: {
     card: "summary",
-    title: "iodriller — Applied AI & Software Systems",
+    title: "Oney Erge — Applied AI & Software Systems",
     description:
       "Useful software for messy, real-world problems. Built by Oney Erge.",
   },
