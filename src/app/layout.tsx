@@ -14,37 +14,39 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "Oney Erge — AI Manager, Language Modeling Engineering. PhD, UT Austin. Language models, agent systems, and hybrid physics/data modeling.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneyerge.com"),
   title: {
-    default: "Oney Erge — Applied AI & Software Systems",
+    default: "Oney Erge — Language Models & Agent Systems",
     template: "%s · Oney Erge",
   },
-  description:
-    "Applied AI, enterprise data, robotics, market research, and real-time software projects by Oney Erge.",
+  description: DESCRIPTION,
   authors: [{ name: "Oney Erge", url: "https://github.com/oney-erge" }],
   creator: "Oney Erge",
   keywords: [
-    "applied AI",
-    "enterprise data",
-    "robotics",
+    "Oney Erge",
+    "language models",
+    "agent systems",
+    "machine learning",
+    "hybrid modeling",
     "open source",
     "Python",
-    "software engineering",
   ],
   openGraph: {
-    title: "Oney Erge — Useful software for messy, real-world problems.",
-    description:
-      "Explore six working systems across applied AI, enterprise data, market research, robotics, and real-time infrastructure.",
-    type: "website",
+    title: "Oney Erge — Language Models & Agent Systems",
+    description: DESCRIPTION,
+    type: "profile",
     locale: "en_US",
     siteName: "Oney Erge",
+    url: "https://oneyerge.com",
   },
   twitter: {
     card: "summary",
-    title: "Oney Erge — Applied AI & Software Systems",
-    description:
-      "Useful software for messy, real-world problems. Built by Oney Erge.",
+    title: "Oney Erge — Language Models & Agent Systems",
+    description: DESCRIPTION,
   },
   robots: {
     index: true,
@@ -55,7 +57,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f3f0e7",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0f12" },
+  ],
 };
 
 export default function RootLayout({

@@ -1,19 +1,39 @@
 :root {
-  --paper: #f3f0e7;
-  --paper-raised: #faf8f1;
-  --ink: #171813;
-  --muted: #66685f;
-  --line: #c8c6bc;
-  --cobalt: #2e61ff;
-  --coral: #f45837;
-  --acid: #d8ff45;
+  --bg: #fbfbf9;
+  --surface: #ffffff;
+  --ink: #14151a;
+  --muted: #5f6470;
+  --faint: #8b909c;
+  --line: #e3e3de;
+  --accent: #1b4dd8;
+  --accent-soft: #eef2ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e0f12;
+    --surface: #15171c;
+    --ink: #f2f2ef;
+    --muted: #a2a7b2;
+    --faint: #767b86;
+    --line: #24262c;
+    --accent: #7ea2ff;
+    --accent-soft: #171c2b;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 html {
   min-height: 100%;
   scroll-behavior: smooth;
-  scroll-padding-top: 80px;
-  background: var(--paper);
+  scroll-padding-top: 2rem;
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
@@ -25,21 +45,13 @@ body {
 body {
   min-height: 100%;
   color: var(--ink);
-  background: var(--paper);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-::selection {
-  color: #fff;
-  background: var(--cobalt);
 }
 
 a {
@@ -47,12 +59,30 @@ a {
   text-decoration: none;
 }
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
+:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-:focus-visible {
-  outline: 3px solid var(--coral);
-  outline-offset: 4px;
+::selection {
+  color: #fff;
+  background: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    color: #0e0f12;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * ,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
