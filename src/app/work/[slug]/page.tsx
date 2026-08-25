@@ -64,7 +64,11 @@ export default async function ProjectPage({ params }: Props) {
   }
 
   const index = projects.findIndex((item) => item.slug === project.slug);
-  const nextProject = projects[(index + 1) % projects.length];
+  const relatedProjects = Array.from(
+    { length: Math.min(2, projects.length - 1) },
+    (_, offset) => projects[(index + offset + 1) % projects.length],
+  );
+  const strengths = project.proof.split(" · ");
   const canonical = `${SITE}/work/${project.slug}/`;
   const image = `${SITE}${project.image}`;
   const schema = [
@@ -116,142 +120,136 @@ export default async function ProjectPage({ params }: Props) {
           __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
         }}
       />
-      <a className={styles.skipLink} href="#case-study">
-        Skip to case study
+      <a className={styles.skipLink} href="#overview">
+        Skip to project details
       </a>
 
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <a className={styles.brand} href="/">Oney Erge</a>
-          <nav aria-label="Project navigation">
-            <a href="/#work">Work</a>
+          <nav aria-label="Primary navigation">
+            <a href="/#work">Projects</a>
             <a href="/#research">Research</a>
             <a href="/#contact">Contact</a>
           </nav>
         </div>
       </header>
 
-      <main id="case-study">
-        <section className={styles.hero}>
+      <main>
+        <section className={styles.hero} aria-labelledby="project-title">
           <div className={styles.breadcrumb} aria-label="Breadcrumb">
-            <a href="/">Oney Erge</a>
-            <span>/</span>
-            <a href="/#work">Work</a>
-            <span>/</span>
+            <a href="/#work">Selected work</a>
+            <span aria-hidden="true">/</span>
             <span>{project.name}</span>
           </div>
-          <div className={styles.heroGrid}>
-            <div>
-              <p className={styles.eyebrow}>{project.field} / {project.status}</p>
-              <h1>{project.name}</h1>
+
+          <div className={styles.heroPanel}>
+            <div className={styles.heroCopy}>
+              <div className={styles.projectMeta}>
+                <span>{project.field}</span>
+                <span>{project.status}</span>
+              </div>
+              <h1 id="project-title">{project.name}</h1>
               <p className={styles.headline}>{project.headline}</p>
-            </div>
-            <div className={styles.heroAside}>
-              <p>{project.description}</p>
+              <p className={styles.description}>{project.description}</p>
               <div className={styles.actions}>
                 <a href={`${GITHUB}/${project.repo}`} target="_blank" rel="noreferrer">
-                  Open source <Arrow />
+                  View source <Arrow />
                 </a>
-                <a href="/#contact">Discuss a project <Arrow /></a>
+                <a href="#overview">What it does <span aria-hidden="true">↓</span></a>
               </div>
             </div>
+
+            <div className={styles.heroMedia} aria-label={`${project.name} visual preview`}>
+              <ProjectVisual project={project} large />
+            </div>
           </div>
-          <dl className={styles.proofBar}>
-            <div>
-              <dt>Focus</dt>
-              <dd>{project.searchIntent}</dd>
-            </div>
-            <div>
-              <dt>Evidence</dt>
-              <dd>{project.proof}</dd>
-            </div>
-            <div>
-              <dt>Stack</dt>
-              <dd>{project.tags.join(" · ")}</dd>
-            </div>
-          </dl>
-          <p className={styles.byline}>
-            Case study by <a href="/">Oney Erge</a>
-            <span>·</span>
-            Updated August 24, 2026
-          </p>
         </section>
 
-        <section className={styles.showcase} aria-label={`${project.name} visual preview`}>
-          <ProjectVisual project={project} large />
-        </section>
-
-        <article className={styles.article}>
-          <section className={styles.questionSection}>
-            <p className={styles.sectionLabel}>01 / The question</p>
-            <h2>{project.question}</h2>
-            <div className={styles.overview}>
-              {project.overview.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        <article className={styles.brief}>
+          <section id="overview" className={styles.briefSection}>
+            <div className={styles.briefHeading}>
+              <p className={styles.sectionLabel}>Purpose</p>
+              <h2>What {project.name} does.</h2>
+            </div>
+            <div className={styles.purposeGrid}>
+              <div>
+                <h3>Aim</h3>
+                <p>{project.plainLanguage}</p>
+              </div>
+              <div>
+                <h3>What it does</h3>
+                <p>{project.technicalSummary}</p>
+              </div>
+              <div>
+                <h3>Good at</h3>
+                <ul>
+                  {strengths.map((strength) => <li key={strength}>{strength}</li>)}
+                </ul>
+              </div>
             </div>
           </section>
 
-          <section className={styles.workflowSection}>
-            <div className={styles.sectionIntro}>
-              <p className={styles.sectionLabel}>02 / System shape</p>
-              <h2>The shortest path through the system.</h2>
+          <section className={styles.briefSection}>
+            <div className={styles.compactHeading}>
+              <div>
+                <p className={styles.sectionLabel}>Flow</p>
+                <h2>The {project.name} flow.</h2>
+              </div>
             </div>
             <ol className={styles.workflow}>
               {project.workflow.map((step, stepIndex) => (
                 <li key={step.label}>
-                  <span>{String(stepIndex + 1).padStart(2, "0")}</span>
-                  <strong>{step.label}</strong>
-                  <p>{step.detail}</p>
+                  <span className={styles.stepNumber}>{String(stepIndex + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>{step.label}</h3>
+                    <p>{step.detail}</p>
+                  </div>
                 </li>
               ))}
             </ol>
-          </section>
-
-          <section className={styles.decisionsSection}>
-            <div className={styles.sectionIntro}>
-              <p className={styles.sectionLabel}>03 / Engineering decisions</p>
-              <h2>What the architecture makes explicit.</h2>
-            </div>
-            <div className={styles.decisionGrid}>
-              {project.decisions.map((decision, decisionIndex) => (
-                <article key={decision.title}>
-                  <span>{String(decisionIndex + 1).padStart(2, "0")}</span>
-                  <h3>{decision.title}</h3>
-                  <p>{decision.detail}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className={styles.evidenceSection}>
-            <div>
-              <p className={styles.sectionLabel}>04 / Evidence and limits</p>
-              <h2>Claims stay attached to what was measured.</h2>
-            </div>
-            <div>
-              <ul>
-                {project.evidence.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-              <div className={styles.limitCallout}>
-                <span>Known boundary</span>
-                <p>{project.limits}</p>
+            <div className={styles.tryCard}>
+              <div>
+                <p className={styles.sectionLabel}>Try it</p>
+                <h3>{project.tryIt}</h3>
               </div>
+              <a href={`${GITHUB}/${project.repo}`} target="_blank" rel="noreferrer">
+                Setup and examples <Arrow />
+              </a>
             </div>
           </section>
         </article>
 
-        <section className={styles.nextProject}>
-          <p>Next case study</p>
-          <a href={`/work/${nextProject.slug}/`}>
-            <span>{nextProject.field}</span>
-            <strong>{nextProject.name}</strong>
-            <Arrow />
-          </a>
+        <section className={styles.moreWork} aria-labelledby="more-work-title">
+          <div className={styles.moreWorkHeading}>
+            <div>
+              <p className={styles.sectionLabel}>More work</p>
+              <h2 id="more-work-title">Explore another project.</h2>
+            </div>
+            <a href="/#work">View all projects <Arrow /></a>
+          </div>
+          <ul className={styles.relatedGrid}>
+            {relatedProjects.map((relatedProject) => (
+              <li key={relatedProject.slug}>
+                <a href={`/work/${relatedProject.slug}/`}>
+                  <div className={styles.relatedMedia} aria-hidden="true">
+                    <ProjectVisual project={relatedProject} />
+                  </div>
+                  <div className={styles.relatedCopy}>
+                    <p>{relatedProject.field}</p>
+                    <h3>{relatedProject.name} <Arrow /></h3>
+                    <span>{relatedProject.headline}</span>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       </main>
 
       <footer className={styles.footer}>
         <a className={styles.brand} href="/">Oney Erge</a>
-        <p>Applied AI, agent systems, and physical models.</p>
+        <p>Applied AI and physics, research and engineering.</p>
         <p>© {new Date().getFullYear()} Oney Erge</p>
       </footer>
     </>

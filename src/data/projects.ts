@@ -14,6 +14,9 @@ export type Project = {
   status: string;
   headline: string;
   description: string;
+  plainLanguage: string;
+  technicalSummary: string;
+  tryIt: string;
   proof: string;
   tags: string[];
   visual: ProjectVisual;
@@ -37,10 +40,16 @@ export const projects: Project[] = [
     repo: "YBM",
     field: "Agent systems",
     status: "Alpha product",
-    headline: "A policy-protected local agent that can extend its own workflow.",
+    headline: "A local agent for completing real work on your computer.",
     description:
-      "Reach it from the web, Telegram, or WhatsApp. Tools pass through policy, approval, verification, and receipts. When a capability is missing, YBM can write and run the code required to continue.",
-    proof: "Local-first · Self-extending workflows · Auditable tool use",
+      "YBM runs on your machine and handles files, browser work, scheduled tasks, and longer jobs. You choose what it can access and approve important actions before they run.",
+    plainLanguage:
+      "YBM helps you complete file, browser, and long-running tasks from the web, Telegram, or WhatsApp while keeping important actions under your control.",
+    technicalSummary:
+      "It plans the task, asks before important actions, runs only enabled tools, verifies the result, and records what happened.",
+    tryIt:
+      "Install YBM, choose a model in the browser, then start with a small task such as organizing a test folder.",
+    proof: "File and browser tasks · Long-running work · Reviewable actions",
     tags: ["Policy-gated tools", "Self-extending workflows", "Local-first"],
     visual: "ybm",
     image: "/media/ybm-demo.gif",
@@ -50,17 +59,17 @@ export const projects: Project[] = [
       "YBM is a local AI agent for files, browsers, desktop work, and long tasks, with per-tool policy checks, short-lived approvals, verification, and receipts.",
     searchIntent: "Local AI agent safety and computer automation",
     question:
-      "Can a local AI agent act on a real computer without receiving a permanent blank check?",
+      "YBM turns a request into an approved and verified computer task.",
     overview: [
       "YBM turns a message into either a direct reply or a traceable task on the user's machine. It can work through the web, Telegram, or WhatsApp while sharing one backend for orchestration, policy, persistence, and evidence.",
       "The core design is a five-stage contract. A task is planned, shown for approval when it is consequential, executed through explicitly enabled tools, checked against the resulting evidence, and closed with a receipt.",
     ],
     workflow: [
-      { label: "Plan", detail: "Group related changes and expose the intended scope." },
-      { label: "Approve", detail: "Stop before consequential work and show the blast radius." },
-      { label: "Execute", detail: "Enforce policy again at every individual tool call." },
-      { label: "Verify", detail: "Check the answer against artifacts and tool results." },
-      { label: "Receipt", detail: "Record actions, changed files, external data, and uncertainty." },
+      { label: "Plan", detail: "Show the task and the files or apps involved." },
+      { label: "Approve", detail: "Ask before important actions." },
+      { label: "Execute", detail: "Use only the tools and access you enabled." },
+      { label: "Verify", detail: "Check the result against files and tool output." },
+      { label: "Receipt", detail: "Show what changed and what remains uncertain." },
     ],
     decisions: [
       {
@@ -85,7 +94,7 @@ export const projects: Project[] = [
       "Installers are available for Windows, macOS, Linux, and headless Docker use.",
     ],
     limits:
-      "YBM is alpha software and is tested most heavily on Windows. Desktop control is Windows-only, and the WhatsApp integration uses an unofficial client. Important access settings should be reviewed before use.",
+      "YBM is alpha software and is tested most heavily on Windows. Desktop control is Windows-only. Review access settings before use.",
   },
   {
     slug: "afterimage-full-precision-llm-inference",
@@ -96,6 +105,12 @@ export const projects: Project[] = [
     headline: "Run large, full-precision models on smaller GPUs.",
     description:
       "A research toolbox for testing lossless compression, streaming, and speculative methods beyond VRAM. A measured 29.5 GB Qwen3-14B BF16 model ran on an 8 GB GPU, with some tested modes outperforming AirLLM and Hugging Face Accelerate.",
+    plainLanguage:
+      "Run a model larger than GPU memory without reducing the precision of its stored weights by loading only the layers needed at each moment.",
+    technicalSummary:
+      "Lossless weight storage and layerwise CUDA streaming executed a 29.536 GB BF16 model on an 8 GB GPU. The tradeoff is disk-bound latency measured in seconds per token.",
+    tryIt:
+      "Run the estimator for your model and hardware, then compare a supported exact mode with a named baseline.",
     proof: "29.5 GB model on 8 GB GPU · Lossless weights",
     tags: ["Lossless compression", "CUDA memory streaming", "Inference research"],
     visual: "afterimage",
@@ -152,6 +167,12 @@ export const projects: Project[] = [
     headline: "A complete local model deployment and benchmarking suite.",
     description:
       "Inspect hardware, estimate which models fit, find and pull them from one UI, manage compatible runtimes, and measure speed, quality, and memory.",
+    plainLanguage:
+      "LocalDeploy checks your computer, recommends models likely to fit, installs them, and measures how they actually perform.",
+    technicalSummary:
+      "Hardware detection, memory-fit estimation, runtime adapters, and repeatable benchmarks connect model selection with local serving across several inference runtimes.",
+    tryIt:
+      "Let LocalDeploy inspect your hardware, deploy a recommended model, then record a repeatable benchmark.",
     proof: "Hardware fit · Runtime control · Repeatable benchmarks",
     tags: ["Hardware-aware deployment", "Model benchmarking", "Runtime orchestration"],
     visual: "localdeploy",
@@ -208,6 +229,12 @@ export const projects: Project[] = [
     headline: "Bring AI agents and physics into the same experiment.",
     description:
       "Give an agent a simulated world, explicit tools, and physical challenges, then measure what it builds, what happens, and how its next attempt changes.",
+    plainLanguage:
+      "An AI agent builds something in a simulated world, sees what happened, and gets another chance to improve it.",
+    technicalSummary:
+      "Validated tools produce engine-neutral episode traces. Named reward functions and paired model-by-seed trials make behavior replayable and statistically comparable.",
+    tryIt:
+      "Choose a reference challenge, run one agent trial, then replay the trace and inspect the score.",
     proof: "24 explicit tools · Explainable scores · Replayable trials",
     tags: ["Agent evaluation", "Physics simulation", "Reproducible trials"],
     visual: "agentarium",
@@ -264,6 +291,12 @@ export const projects: Project[] = [
     headline: "Design, evolve, and test robot bodies in physics.",
     description:
       "Modify humanoids, quadrupeds, and other robot bodies, evolve morphology and control, diagnose failures, and share a reproducible experiment pack.",
+    plainLanguage:
+      "Design a robot body, run it in physics, and identify whether the body, controller, task, or simulator caused a failure.",
+    technicalSummary:
+      "Portable morphology, task, and controller specifications support perturbation tests, backend counterfactuals, trace-based diagnosis, and reproducible experiment exports.",
+    tryIt:
+      "Choose a bundled creature and task, run the simulation, then inspect the failure diagnosis.",
     proof: "Humanoids and quadrupeds · Evolution · PyBullet",
     tags: ["Robot morphology", "Evolutionary search", "PyBullet"],
     visual: "creature",
@@ -320,6 +353,12 @@ export const projects: Project[] = [
     headline: "Train, compare, and deploy semantic segmentation workflows.",
     description:
       "Use ready-to-run presets and model backends for training, evaluation, comparison, and image, video, or YouTube inference from one platform.",
+    plainLanguage:
+      "Use one setup to train a segmentation model, compare it, and run it on images or videos.",
+    technicalSummary:
+      "Layered YAML configuration drives consistent model, data, evaluation, and inference contracts across CLI, Python, and web interfaces with optional model backends.",
+    tryIt:
+      "Choose a preset, run the environment check, then test inference on an image or video.",
     proof: "Model presets · Comparative evaluation · Video workflows",
     tags: ["Semantic segmentation", "Model comparison", "Video inference"],
     visual: "segcraft",

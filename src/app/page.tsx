@@ -397,8 +397,7 @@ export default function Home() {
             </nav>
           </div>
           <div className={styles.bio}>
-            <p>I am interested in where AI and physics meet: systems that use tools, fit the hardware available, and learn from physical outcomes.</p>
-            <p>My background is in dynamical systems, control, and fluid mechanics. It shapes the problems I choose and how I test what actually works.</p>
+            <p>I enjoy the intersection of AI, physics, and engineering. I&apos;ve worked across agents, robotics, simulation, machine learning, and physical modeling, and I&apos;m especially drawn to emerging problems where scientific ideas can lead to practical results.</p>
           </div>
         </header>
 
