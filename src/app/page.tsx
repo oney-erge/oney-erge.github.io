@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { ProjectVisual } from "@/components/project-visual";
 import { projects, type Project } from "@/data/projects";
-import { SITE_MODIFIED } from "@/data/site";
+import { SITE_MODIFIED, SITE_YEAR } from "@/data/site";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
@@ -353,12 +353,11 @@ function ProjectCard({ project }: { project: Project }) {
     <li id={`project-${project.slug}`}>
       <article className={styles.projectCard}>
         <div className={styles.projectMedia}>
-          <div aria-hidden="true"><ProjectVisual project={project} /></div>
-          <a className={styles.projectMediaLink} href={`/work/${project.slug}/`} aria-label={`View the ${project.name} case study`} />
+          <ProjectVisual project={project} />
         </div>
         <div className={styles.projectBody}>
           <p className={styles.projectField}>{project.field}</p>
-          <h3><a href={`/work/${project.slug}/`}>{project.name} <Arrow /></a></h3>
+          <h3><a className={styles.projectCardLink} href={`/work/${project.slug}/`}>{project.name} <Arrow /></a></h3>
           <p className={styles.projectOutcome}>{copy.outcome}</p>
           <p className={styles.projectSummary}>{copy.detail}</p>
           <p className={styles.projectEvidence}>{copy.evidence}</p>
@@ -383,7 +382,7 @@ export default function Home() {
       <main className={styles.page} id="top">
         <header className={styles.profile}>
           <figure className={styles.avatar}>
-            <Image src="/media/oney-erge-portrait.webp" alt="Oney Erge" width={1000} height={1501} priority sizes="(max-width: 600px) 90px, 172px" />
+            <Image src="/media/oney-erge-portrait.webp" alt="Oney Erge" width={1000} height={1501} priority />
           </figure>
           <div className={styles.profileMain}>
             <h1>Oney Erge</h1>
@@ -493,7 +492,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className={styles.footer}><p>© {new Date().getFullYear()} Oney Erge</p><a href="#top">Back to top ↑</a></footer>
+      <footer className={styles.footer}><p>© {SITE_YEAR} Oney Erge</p><a href="#top">Back to top ↑</a></footer>
     </>
   );
 }

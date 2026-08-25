@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectVisual } from "@/components/project-visual";
 import { getProject, projects } from "@/data/projects";
-import { SITE, SITE_MODIFIED, SITE_PUBLISHED } from "@/data/site";
+import { SITE, SITE_MODIFIED, SITE_PUBLISHED, SITE_YEAR } from "@/data/site";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
@@ -70,7 +70,7 @@ export default async function ProjectPage({ params }: Props) {
   );
   const strengths = project.proof.split(" · ");
   const canonical = `${SITE}/work/${project.slug}/`;
-  const image = `${SITE}${project.image}`;
+  const image = `${SITE}${project.socialImage}`;
   const schema = [
     {
       "@context": "https://schema.org",
@@ -137,11 +137,11 @@ export default async function ProjectPage({ params }: Props) {
 
       <main>
         <section className={styles.hero} aria-labelledby="project-title">
-          <div className={styles.breadcrumb} aria-label="Breadcrumb">
+          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
             <a href="/#work">Selected work</a>
             <span aria-hidden="true">/</span>
-            <span>{project.name}</span>
-          </div>
+            <span aria-current="page">{project.name}</span>
+          </nav>
 
           <div className={styles.heroPanel}>
             <div className={styles.heroCopy}>
@@ -160,7 +160,7 @@ export default async function ProjectPage({ params }: Props) {
               </div>
             </div>
 
-            <div className={styles.heroMedia} aria-label={`${project.name} visual preview`}>
+            <div className={styles.heroMedia}>
               <ProjectVisual project={project} large />
             </div>
           </div>
@@ -250,7 +250,7 @@ export default async function ProjectPage({ params }: Props) {
       <footer className={styles.footer}>
         <a className={styles.brand} href="/">Oney Erge</a>
         <p>Applied AI and physics, research and engineering.</p>
-        <p>© {new Date().getFullYear()} Oney Erge</p>
+        <p>© {SITE_YEAR} Oney Erge</p>
       </footer>
     </>
   );

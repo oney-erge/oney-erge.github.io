@@ -35,7 +35,6 @@ export function ProjectVisual({
           src="/media/afterimage-streaming.webp"
           alt="Model layers streaming from storage through memory to a smaller GPU"
           fill
-          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 58vw"}
           className={styles.afterimageImage}
         />
         <div className={styles.afterimageMeasure}>
@@ -51,13 +50,11 @@ export function ProjectVisual({
   if (project.visual === "localdeploy") {
     return (
       <div className={`${className} ${styles.localdeployVisual}`}>
-        <Image
-          src="/media/localdeploy-demo.gif"
-          alt="LocalDeploy walkthrough showing hardware-aware recommendations, deployment, chat, benchmarks, and monitoring"
-          fill
-          unoptimized
-          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 58vw"}
-          className={styles.localdeployImage}
+        <LoopingVideo
+          src="/media/localdeploy-demo.mp4"
+          poster="/media/localdeploy-poster.webp"
+          label="LocalDeploy walkthrough showing hardware-aware recommendations, deployment, chat, benchmarks, and monitoring"
+          className={`${styles.previewVideo} ${styles.containImage}`}
         />
         <span className={styles.visualBadge}>Choose · deploy · measure</span>
       </div>
@@ -71,7 +68,6 @@ export function ProjectVisual({
           src="/media/agentarium-city.png"
           alt="Agentarium tiny city simulation preview"
           fill
-          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 33vw"}
           className={styles.containImage}
         />
         <span className={styles.visualCode}>CITY_PULSE / SCORE 100%</span>

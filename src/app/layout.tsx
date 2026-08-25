@@ -6,17 +6,17 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "optional",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "optional",
+  display: "swap",
 });
 
 const DESCRIPTION =
-  "Oney Erge is an applied AI researcher, engineer, and inventor with 8 US patents, building agent systems, local inference tools, robotics simulations, and hybrid physical models.";
+  "Oney Erge is an applied AI researcher, engineer, and inventor with 8 US patents, building agent systems, local AI inference, and robotics simulation.";
 const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {

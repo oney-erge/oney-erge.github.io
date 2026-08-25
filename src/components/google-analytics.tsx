@@ -17,7 +17,7 @@ export function GoogleAnalytics() {
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${MEASUREMENT_ID}', { anonymize_ip: true });`}
+gtag('config', '${MEASUREMENT_ID}');`}
       </Script>
     </>
   );
