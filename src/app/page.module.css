@@ -24,15 +24,15 @@
 
 .profile {
   display: grid;
-  grid-template-columns: 10.75rem minmax(0, 1fr);
-  column-gap: 3.1rem;
+  grid-template-columns: 14.5rem minmax(0, 1fr);
+  column-gap: 2rem;
   align-items: start;
   padding: 3.5rem 0 2.5rem;
 }
 
 .avatar {
   grid-row: 1 / span 2;
-  width: 10.75rem;
+  width: 14.5rem;
   aspect-ratio: 1;
   overflow: hidden;
   background: #e3e3df;
@@ -181,8 +181,8 @@
 
 .now {
   display: grid;
-  grid-template-columns: 10.75rem minmax(0, 1fr);
-  column-gap: 3.1rem;
+  grid-template-columns: 14.5rem minmax(0, 1fr);
+  column-gap: 2rem;
   padding: 2rem 0;
   border-bottom: 1px solid var(--line);
 }
@@ -405,7 +405,7 @@
   display: grid;
   grid-template-columns: 7.5rem 7.5rem minmax(0, 1fr);
   align-items: start;
-  min-height: 10rem;
+  min-height: 9rem;
 }
 
 .timeline > li > time {
@@ -447,7 +447,7 @@
 
 .timelineCopy {
   position: relative;
-  padding: 1.25rem 0 2rem 1.4rem;
+  padding: 1.25rem 0 1.4rem 1.4rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -489,7 +489,7 @@
 
 .timelineDescription {
   max-width: 43rem;
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
   color: var(--muted);
   font-size: var(--type-body);
   line-height: 1.62;
@@ -934,18 +934,18 @@
   }
 
   .profile {
-    grid-template-columns: 9rem minmax(0, 1fr);
-    column-gap: 2.25rem;
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+    column-gap: 1.5rem;
     padding-top: 2.75rem;
   }
 
   .avatar {
-    width: 9rem;
+    width: 11.5rem;
   }
 
   .now {
-    grid-template-columns: 9rem minmax(0, 1fr);
-    column-gap: 2.25rem;
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+    column-gap: 1.5rem;
   }
 
   .timeline > li {
@@ -960,8 +960,8 @@
   }
 
   .profile {
-    grid-template-columns: 5.6rem minmax(0, 1fr);
-    gap: 0 1.15rem;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0 0.9rem;
     padding: 1.65rem 0 1.5rem;
   }
 
@@ -973,7 +973,7 @@
 
   .avatar {
     grid-row: 1;
-    width: 5.6rem;
+    width: 7.5rem;
   }
 
   .profileMain {
@@ -1096,7 +1096,7 @@
   .timeline > li {
     position: relative;
     grid-template-columns: 5.2rem minmax(0, 1fr);
-    min-height: 8.8rem;
+    min-height: 8.2rem;
   }
 
   .timeline > li > time {
@@ -1123,7 +1123,7 @@
 
   .timelineCopy {
     grid-column: 2;
-    padding: 2rem 0 1.7rem 0.85rem;
+    padding: 2rem 0 1.25rem 0.85rem;
   }
 
   .timelineCopy::before {
@@ -1140,7 +1140,7 @@
   }
 
   .timelineDescription {
-    margin-top: 0.6rem;
+    margin-top: 0.5rem;
     font-size: 1rem;
     line-height: 1.58;
   }
@@ -1204,12 +1204,12 @@
 
 @media (max-width: 520px) {
   .profile {
-    grid-template-columns: 5.8rem minmax(0, 1fr);
-    column-gap: 0.95rem;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    column-gap: 0.75rem;
   }
 
   .avatar {
-    width: 5.8rem;
+    width: 7.5rem;
   }
 
   .profileMain h1 {

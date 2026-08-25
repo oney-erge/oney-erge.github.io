@@ -414,7 +414,6 @@ export default function Home() {
         <section className={`${styles.section} ${styles.workBreakout}`} id="work" aria-labelledby="work-heading">
           <header className={styles.sectionHeader}>
             <div><p>Projects</p><h2 id="work-heading">Selected work</h2></div>
-            <p>Six open-source systems, each with working code, a visual demo, and a technical case study that explains what was tested.</p>
           </header>
           <ol className={styles.projectGrid}>{projects.map((project) => <ProjectCard key={project.repo} project={project} />)}</ol>
           <a className={styles.textLink} href={GITHUB} target="_blank" rel="noreferrer">More on GitHub <Arrow /></a>
@@ -423,7 +422,6 @@ export default function Home() {
         <section className={styles.section} id="background" aria-labelledby="background-heading">
           <header className={styles.sectionHeader}>
             <div><p>Timeline</p><h2 id="background-heading">Past work</h2></div>
-            <p>A single chronology of the places where I worked, researched, and studied.</p>
           </header>
           <ol className={styles.timeline}>
             {timeline.map((item) => (
@@ -455,7 +453,6 @@ export default function Home() {
         <section className={styles.section} id="research" aria-labelledby="research-heading">
           <header className={styles.sectionHeader}>
             <div><p>Research</p><h2 id="research-heading">Papers and patents</h2></div>
-            <p>Research in hybrid modeling, control, automation, and well construction, including eight selected US patent grants and 32+ publications.</p>
           </header>
           <dl className={styles.researchStats}>
             <div><dt>800+</dt><dd>Citations</dd></div><div><dt>32+</dt><dd>Publications</dd></div><div><dt>15</dt><dd>h-index</dd></div><div><dt>8</dt><dd>US patents</dd></div>
