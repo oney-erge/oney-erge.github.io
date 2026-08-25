@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectVisual } from "@/components/project-visual";
 import { getProject, projects } from "@/data/projects";
+import { SITE, SITE_MODIFIED, SITE_PUBLISHED } from "@/data/site";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
-const SITE = "https://oneyerge.com";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -80,8 +80,8 @@ export default async function ProjectPage({ params }: Props) {
       description: project.seoDescription,
       url: canonical,
       image,
-      datePublished: "2026-08-24",
-      dateModified: "2026-08-24",
+      datePublished: SITE_PUBLISHED,
+      dateModified: SITE_MODIFIED,
       author: { "@id": `${SITE}/#person` },
       mainEntityOfPage: canonical,
       about: project.tags,

@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { ProjectVisual } from "@/components/project-visual";
 import { projects, type Project } from "@/data/projects";
+import { SITE_MODIFIED } from "@/data/site";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
@@ -263,7 +264,7 @@ const profileSchema = {
   "@id": "https://oneyerge.com/#profile",
   url: "https://oneyerge.com/",
   name: "Oney Erge | Applied AI Researcher and Engineer",
-  dateModified: "2026-08-24",
+  dateModified: SITE_MODIFIED,
   mainEntity: {
     "@type": "Person",
     "@id": "https://oneyerge.com/#person",
