@@ -34,4 +34,10 @@ After the first deployment:
 3. Inspect `https://oneyerge.com/` and request indexing after substantial releases.
 4. Set the repository Actions variable `GOOGLE_SITE_VERIFICATION` only if Search Console gives you an HTML-tag verification token. The workflow exposes it as `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` during the static build.
 
+Deployments also submit the canonical site and project URLs to IndexNow after GitHub Pages finishes. The public key is stored at the site root and the submission script is available as `npm run indexnow`.
+
+## Analytics
+
+The site includes a Google Analytics 4 integration that is disabled until a valid measurement ID is configured. Create a GA4 web data stream for `https://oneyerge.com`, then add its `G-...` measurement ID as the repository Actions variable `GOOGLE_ANALYTICS_ID`. The next deployment will include the Google tag. No placeholder ID or third-party analytics account is committed to the repository.
+
 Technical SEO makes the site crawlable and understandable. Search growth still depends on publishing useful, link-worthy pages and earning relevant references from GitHub, LinkedIn, talks, papers, and other sites.

@@ -786,7 +786,7 @@
 .projectVisual {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 11.4;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   isolation: isolate;
 }
@@ -804,7 +804,7 @@
 .containImage,
 .localdeployImage,
 .afterimageImage {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .previewVideo {
@@ -858,7 +858,7 @@
 }
 
 .localdeployImage {
-  object-position: center top;
+  object-position: center;
 }
 
 .afterimageVisual {
@@ -907,10 +907,6 @@
 
 .agentariumVisual {
   background: #080b12;
-}
-
-.agentariumVisual .containImage {
-  object-fit: cover;
 }
 
 .creatureVisual {
@@ -1068,7 +1064,7 @@
   }
 
   .projectVisual {
-    aspect-ratio: 16 / 11.4;
+    aspect-ratio: 16 / 10;
   }
 
   .detailVisual,

@@ -95,7 +95,7 @@ const timeline: TimelineItem[] = [
     kind: "Work",
     mark: "dow",
     description:
-      "I published four internal technical papers on signal processing, data-driven modeling, and decision-making. I also led the assessment and integration of Boston Dynamics Spot and other quadruped robotic platforms.",
+      "I published 4 internal technical papers on signal processing, data-driven modeling, and decision-making. I also led the assessment and integration of Boston Dynamics Spot and other quadruped robotic platforms.",
   },
   {
     period: "2021 to 2022",
@@ -109,12 +109,16 @@ const timeline: TimelineItem[] = [
   {
     period: "2019 to 2021",
     organization: "The University of Texas at Austin",
-    role: "PhD, Mechanical Engineering · Doctoral Researcher, Dynamic Systems and Control",
+    role: "PhD · Portfolio in Applied Statistical Modeling",
     kind: "Research and education",
     mark: "ut-austin",
     description:
       "My doctoral research focused on hybrid modeling: combining AI and physics to improve prediction and control in physical systems.",
     links: [
+      {
+        label: "Doctoral dissertation",
+        href: "https://hdl.handle.net/2152/98836",
+      },
       {
         label: "SciPy paper",
         href: "https://proceedings.scipy.org/articles/Majora-342d178e-011.pdf",
@@ -146,8 +150,8 @@ const timeline: TimelineItem[] = [
       "My MSc research combined experiments and numerical methods for non-Newtonian flow and freely rotating drillstrings. I later collaborated on work pairing a deep-learning model with genetic-algorithm optimization.",
     links: [
       {
-        label: "Master's thesis",
-        href: "https://www.researchgate.net/publication/278676920_Effect_of_Free_Drillstring_Rotation_on_Frictional_Pressure_Losses",
+        label: "Request master's thesis",
+        href: LINKEDIN,
       },
       {
         label: "Genetic-algorithm paper",

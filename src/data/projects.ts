@@ -155,7 +155,7 @@ export const projects: Project[] = [
     proof: "Hardware fit · Runtime control · Repeatable benchmarks",
     tags: ["Hardware-aware deployment", "Model benchmarking", "Runtime orchestration"],
     visual: "localdeploy",
-    image: "/media/localdeploy-catalog.png",
+    image: "/media/localdeploy-demo.gif",
     socialImage: "/media/localdeploy-social.png",
     seoTitle: "LocalDeploy Local AI Model Selection and Benchmarking",
     seoDescription:

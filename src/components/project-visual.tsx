@@ -52,13 +52,14 @@ export function ProjectVisual({
     return (
       <div className={`${className} ${styles.localdeployVisual}`}>
         <Image
-          src="/media/localdeploy-catalog.png"
-          alt="LocalDeploy model catalog with hardware fit indicators"
+          src="/media/localdeploy-demo.gif"
+          alt="LocalDeploy walkthrough showing hardware-aware recommendations, deployment, chat, benchmarks, and monitoring"
           fill
+          unoptimized
           sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 58vw"}
           className={styles.localdeployImage}
         />
-        <span className={styles.visualBadge}>Model fit before download</span>
+        <span className={styles.visualBadge}>Choose · deploy · measure</span>
       </div>
     );
   }
