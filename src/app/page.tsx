@@ -109,7 +109,7 @@ const timeline: TimelineItem[] = [
   {
     period: "2019 to 2021",
     organization: "The University of Texas at Austin",
-    role: "PhD · Portfolio in Applied Statistical Modeling",
+    role: "PhD, Dynamic Systems and Control · Portfolio in Applied Statistical Modeling",
     kind: "Research and education",
     mark: "ut-austin",
     description:
