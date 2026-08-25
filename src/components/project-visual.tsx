@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Project } from "@/data/projects";
 import styles from "@/app/page.module.css";
+import { LoopingVideo } from "@/components/looping-video";
 
 export function ProjectVisual({
   project,
@@ -16,13 +17,11 @@ export function ProjectVisual({
   if (project.visual === "ybm") {
     return (
       <div className={`${className} ${styles.ybmVisual}`}>
-        <Image
-          src="/media/ybm-demo.gif"
-          alt="YBM local agent console showing policy-protected chat and task controls"
-          fill
-          unoptimized
-          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 58vw"}
-          className={styles.coverImage}
+        <LoopingVideo
+          src="/media/ybm-demo.mp4"
+          poster="/media/ybm-demo-poster.webp"
+          label="YBM local agent console showing policy-protected chat and task controls"
+          className={`${styles.previewVideo} ${styles.coverImage}`}
         />
         <span className={styles.visualBadge}>Policy protected</span>
       </div>
@@ -33,19 +32,18 @@ export function ProjectVisual({
     return (
       <div className={`${className} ${styles.afterimageVisual}`}>
         <Image
-          src="/media/afterimage-logo.webp"
-          alt=""
-          width={156}
-          height={156}
-          className={styles.afterimageLogo}
+          src="/media/afterimage-streaming.webp"
+          alt="Model layers streaming from storage through memory to a smaller GPU"
+          fill
+          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 58vw"}
+          className={styles.afterimageImage}
         />
         <div className={styles.afterimageMeasure}>
-          <span>BF16 MODEL</span>
-          <strong>29.5 GB</strong>
-          <i aria-hidden="true">↓</i>
+          <strong>29.5 GB model</strong>
+          <span>on</span>
           <strong>8 GB GPU</strong>
-          <small>LOSSLESS · NO QUANTIZATION</small>
         </div>
+        <span className={styles.visualBadge}>Lossless weight streaming</span>
       </div>
     );
   }
@@ -83,13 +81,11 @@ export function ProjectVisual({
   if (project.visual === "creature") {
     return (
       <div className={`${className} ${styles.creatureVisual}`}>
-        <Image
-          src="/media/creature-lab-demo.gif"
-          alt="Creature Lab quadruped simulation"
-          fill
-          unoptimized
-          sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 33vw"}
-          className={styles.coverImage}
+        <LoopingVideo
+          src="/media/creature-lab-demo.mp4"
+          poster="/media/creature-lab-poster.webp"
+          label="Creature Lab quadruped simulation"
+          className={`${styles.previewVideo} ${styles.coverImage}`}
         />
         <span className={styles.visualCode}>RUN / OBSERVE / DIAGNOSE</span>
       </div>
@@ -98,12 +94,11 @@ export function ProjectVisual({
 
   return (
     <div className={`${className} ${styles.segcraftVisual}`}>
-      <Image
-        src="/media/segcraft-preview.webp"
-        alt="SegCraft dashcam video beside a semantic segmentation overlay"
-        fill
-        sizes={large ? "(max-width: 900px) 100vw, 82vw" : "(max-width: 800px) 100vw, 33vw"}
-        className={styles.containImage}
+      <LoopingVideo
+        src="/media/segcraft-demo.mp4"
+        poster="/media/segcraft-preview.webp"
+        label="SegCraft dashcam video beside a semantic segmentation overlay"
+        className={`${styles.previewVideo} ${styles.containImage}`}
       />
       <span className={styles.visualCode}>CONFIG / TRAIN / INFER</span>
     </div>

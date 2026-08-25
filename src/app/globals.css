@@ -10,6 +10,10 @@
   --line-strong: #b9bbc0;
   --accent: #3158c8;
   --accent-soft: #edf1ff;
+  --type-label: 0.78rem;
+  --type-small: 0.92rem;
+  --type-body: 1.02rem;
+  --type-lead: 1.16rem;
 }
 
 * {
@@ -38,7 +42,7 @@ body {
   background: var(--page);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

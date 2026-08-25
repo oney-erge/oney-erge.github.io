@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 const DESCRIPTION =
-  "Oney Erge is an applied AI researcher and engineer building agent systems, local inference tools, robotics simulations, and hybrid physical models.";
+  "Oney Erge is an applied AI researcher, engineer, and inventor with 8 US patents, building agent systems, local inference tools, robotics simulations, and hybrid physical models.";
 const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneyerge.com"),
   title: {
-    default: "Oney Erge | Applied AI, Agents, and Physical Systems",
+    default: "Oney Erge | Applied AI and Physics",
     template: "%s | Oney Erge",
   },
   description: DESCRIPTION,
@@ -32,10 +32,12 @@ export const metadata: Metadata = {
   creator: "Oney Erge",
   keywords: [
     "Oney Erge",
+    "Oney Erge patents",
     "agent systems",
     "local AI",
     "language models",
     "AI inference",
+    "full-precision LLM inference",
     "robotics simulation",
     "machine learning",
     "physics-informed machine learning",
@@ -43,7 +45,7 @@ export const metadata: Metadata = {
     "open source",
   ],
   openGraph: {
-    title: "Oney Erge | Applied AI, Agents, and Physical Systems",
+    title: "Oney Erge | Applied AI and Physics",
     description: DESCRIPTION,
     type: "profile",
     locale: "en_US",
@@ -60,7 +62,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Oney Erge | Applied AI, Agents, and Physical Systems",
+    title: "Oney Erge | Applied AI and Physics",
     description: DESCRIPTION,
     images: ["/media/oney-erge-social.png"],
   },
