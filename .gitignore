@@ -45,3 +45,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# personal writing drafts — belong in a private repo, not the public portfolio
+/ONEYSTYLE.md
+/src/app/writing/
