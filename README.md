@@ -2,7 +2,7 @@
 
 Source for [oneyerge.com](https://oneyerge.com), the personal site and selected work of Oney Erge.
 
-The site is a static Next.js export deployed to GitHub Pages from the `master` branch. Project descriptions and media are based on the corresponding public repositories under [github.com/oney-erge](https://github.com/oney-erge).
+The site is a static Next.js export deployed to GitHub Pages from the `main` branch. Project descriptions and media are based on the corresponding public repositories under [github.com/oney-erge](https://github.com/oney-erge).
 
 ## Local development
 
@@ -19,9 +19,10 @@ Open `http://localhost:3000`.
 npm run lint
 npm run typecheck
 npm run build
+npm run check:seo
 ```
 
-`npm run build` writes the static site to `out/`. The GitHub Pages workflow publishes that directory and preserves the custom domain through `public/CNAME`.
+`npm run build` writes the static site to `out/`. Run `npm run check:seo` after it to verify the generated canonical URLs, internal page links, sitemap, robots file, and structured-data datetimes. The GitHub Pages workflow runs the same gate before publishing that directory and preserves the custom domain through `public/CNAME`.
 
 ## Search indexing
 

@@ -3,15 +3,16 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
 import { SITE, SITE_YEAR } from "@/data/site";
+import { getWritingPost } from "@/data/writing";
 import { PostFigures } from "./post-figures";
 import "./article.css";
 import styles from "./page.module.css";
 
 const SLUG = "llm-memory-requirements-consumer-gpu";
-const PATH = `/writing/${SLUG}/`;
-const TITLE = "Memory requirements of language model inference on a consumer GPU";
-const DESCRIPTION =
-  "What occupies GPU memory while a language model runs, calculated for Qwen3-14B on an 8 GB laptop GPU: system use, number formats, model parts, and the KV cache.";
+const POST = getWritingPost(SLUG);
+const PATH = POST.href;
+const TITLE = POST.title;
+const DESCRIPTION = POST.description;
 
 /* The article body is shared with the standalone artifact build; edit article.html, not this file.
    Read per render so `next dev` picks up edits; the static export reads it once at build time. */
@@ -30,13 +31,17 @@ export const metadata: Metadata = {
     type: "article",
     url: PATH,
     siteName: "Oney Erge",
-    images: [{ url: "/media/afterimage-social.png", width: 1200, height: 630, alt: TITLE }],
+    publishedTime: POST.datePublished,
+    modifiedTime: POST.dateModified,
+    authors: [`${SITE}/`],
+    tags: POST.tags,
+    images: [{ url: POST.socialImage, width: 1200, height: 630, alt: TITLE }],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/media/afterimage-social.png"],
+    images: [POST.socialImage],
   },
 };
 
@@ -49,10 +54,13 @@ export default function MemoryRequirementsArticle() {
     headline: TITLE,
     description: DESCRIPTION,
     url: canonical,
-    image: `${SITE}/media/afterimage-social.png`,
-    datePublished: "2026-09-13T12:00:00-05:00",
-    dateModified: "2026-09-13T12:00:00-05:00",
+    image: `${SITE}${POST.socialImage}`,
+    datePublished: POST.datePublished,
+    dateModified: POST.dateModified,
     author: { "@id": `${SITE}/#person` },
+    mainEntityOfPage: canonical,
+    isPartOf: { "@id": `${SITE}/writing/#blog` },
+    keywords: POST.tags,
     about: ["GPU memory", "KV cache", "large language model inference"],
   };
 
@@ -68,6 +76,7 @@ export default function MemoryRequirementsArticle() {
         <div className={styles.headerInner}>
           <a className={styles.brand} href="/">Oney Erge</a>
           <nav aria-label="Primary navigation">
+            <a href="/writing/">Writing</a>
             <a href="/#work">Projects</a>
             <a href="/#research">Research</a>
             <a href="/#contact">Contact</a>
@@ -77,7 +86,7 @@ export default function MemoryRequirementsArticle() {
 
       <main className={styles.main}>
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <a href="/">Home</a><span aria-hidden="true">/</span><span>Writing</span>
+          <a href="/">Home</a><span aria-hidden="true">/</span><a href="/writing/">Writing</a>
         </nav>
         <div dangerouslySetInnerHTML={{ __html: readArticle() }} />
         <PostFigures />

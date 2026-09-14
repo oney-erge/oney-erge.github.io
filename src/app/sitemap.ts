@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { projects } from "@/data/projects";
-import { SITE_MODIFIED } from "@/data/site";
+import { SITE, SITE_MODIFIED } from "@/data/site";
+import { writingPosts } from "@/data/writing";
 
 export const dynamic = "force-static";
 
@@ -9,30 +10,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: "https://oneyerge.com/",
+      url: `${SITE}/`,
       lastModified,
       changeFrequency: "monthly",
       priority: 1,
       images: [
-        "https://oneyerge.com/media/oney-erge-portrait.webp",
-        "https://oneyerge.com/media/oney-erge-social.png",
+        `${SITE}/media/oney-erge-portrait.webp`,
+        `${SITE}/media/oney-erge-social.png`,
       ],
     },
     {
-      url: "https://oneyerge.com/writing/llm-memory-requirements-consumer-gpu/",
-      lastModified,
+      url: `${SITE}/writing/`,
+      lastModified: writingPosts[0]?.dateModified ?? lastModified,
       changeFrequency: "monthly",
-      priority: 0.85,
-      images: ["https://oneyerge.com/media/afterimage-social.png"],
+      priority: 0.9,
     },
+    ...writingPosts.map((post) => ({
+      url: `${SITE}${post.href}`,
+      lastModified: post.dateModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.85,
+      images: [`${SITE}${post.socialImage}`],
+    })),
     ...projects.map((project) => ({
-      url: `https://oneyerge.com/work/${project.slug}/`,
+      url: `${SITE}/work/${project.slug}/`,
       lastModified,
       changeFrequency: "monthly" as const,
       priority: 0.8,
       images: [
-        `https://oneyerge.com${project.image}`,
-        `https://oneyerge.com${project.socialImage}`,
+        `${SITE}${project.image}`,
+        `${SITE}${project.socialImage}`,
       ],
     })),
   ];

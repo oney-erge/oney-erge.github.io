@@ -129,6 +129,7 @@ export default async function ProjectPage({ params }: Props) {
           <a className={styles.brand} href="/">Oney Erge</a>
           <nav aria-label="Primary navigation">
             <a href="/#work">Projects</a>
+            <a href="/writing/">Writing</a>
             <a href="/#research">Research</a>
             <a href="/#contact">Contact</a>
           </nav>

@@ -1,8 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { HomepageSectionNav } from "@/components/homepage-section-nav";
 import { ProjectVisual } from "@/components/project-visual";
+import { WritingCard } from "@/components/writing-card";
 import { projects, type Project } from "@/data/projects";
 import { SITE_MODIFIED, SITE_YEAR } from "@/data/site";
+import { getFeaturedWritingPosts } from "@/data/writing";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
@@ -374,10 +378,12 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export default function Home() {
+  const featuredPosts = getFeaturedWritingPosts();
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema).replace(/</g, "\\u003c") }} />
-      <a className={styles.skipLink} href="#work">Skip to selected work</a>
+      <a className={styles.skipLink} href="#writing">Skip to writing</a>
 
       <main className={styles.page} id="top">
         <header className={styles.profile}>
@@ -401,13 +407,29 @@ export default function Home() {
           </div>
         </header>
 
-        <nav className={styles.jumpNav} aria-label="Page sections">
-          <a href="#work">Projects</a><a href="#background">Timeline</a><a href="#research">Research</a><a href="#contact">Contact</a>
-        </nav>
+        <HomepageSectionNav className={styles.jumpNav} activeClassName={styles.activeNavLink} />
 
         <section className={styles.now} aria-labelledby="now-heading">
           <h2 id="now-heading">Now</h2>
           <p>These are some of the projects I work on in public, from local agents and full-precision inference on small GPUs to simulation environments where agents learn from physical outcomes. I hope they are useful to you in one way or another.</p>
+        </section>
+
+        <section className={`${styles.section} ${styles.writingSection}`} id="writing" aria-labelledby="writing-heading">
+          <header className={styles.writingHeader}>
+            <h2 id="writing-heading">Writing</h2>
+          </header>
+          <ol className={styles.writingGrid} data-count={featuredPosts.length}>
+            {featuredPosts.map((post, index) => (
+              <li key={post.slug}>
+                <WritingCard
+                  post={post}
+                  position={index}
+                  layout={featuredPosts.length === 1 || (featuredPosts.length === 3 && index === 0) ? "spotlight" : "standard"}
+                />
+              </li>
+            ))}
+          </ol>
+          <Link className={styles.textLink} href="/writing/">Browse all writing <Arrow /></Link>
         </section>
 
         <section className={`${styles.section} ${styles.workBreakout}`} id="work" aria-labelledby="work-heading">
