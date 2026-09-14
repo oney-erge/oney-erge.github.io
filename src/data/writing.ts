@@ -29,7 +29,7 @@ export const writingPosts: WritingPost[] = [
       "What occupies GPU memory while a language model runs, calculated for Qwen3-14B on an 8 GB laptop GPU: system use, number formats, model parts, and the KV cache.",
     series: "Running large language models on small GPUs · Part 1",
     datePublished: "2026-09-13T12:00:00-05:00",
-    dateModified: "2026-09-13T12:00:00-05:00",
+    dateModified: "2026-09-14T11:29:36-05:00",
     dateLabel: "September 13, 2026",
     readingTime: "12 min read",
     tags: ["GPU memory", "LLM inference", "BF16"],

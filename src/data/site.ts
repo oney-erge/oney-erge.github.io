@@ -6,7 +6,7 @@ export const SITE = "https://oneyerge.com";
  * rejected as an invalid datetime. Update these when the content changes.
  */
 export const SITE_PUBLISHED = "2026-08-24T20:58:54-05:00";
-export const SITE_MODIFIED = "2026-09-14T08:00:00-05:00";
+export const SITE_MODIFIED = "2026-09-14T11:29:36-05:00";
 
 /**
  * Footer copyright year, derived from SITE_MODIFIED instead of the build
