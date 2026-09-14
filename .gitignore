@@ -47,5 +47,7 @@ yarn-error.log*
 next-env.d.ts
 
 # personal writing drafts — belong in a private repo, not the public portfolio
+# published posts are carved out explicitly below, per post, once ready
 /ONEYSTYLE.md
-/src/app/writing/
+/src/app/writing/*
+!/src/app/writing/llm-memory-requirements-consumer-gpu/

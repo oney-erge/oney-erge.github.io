@@ -18,6 +18,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
         "https://oneyerge.com/media/oney-erge-social.png",
       ],
     },
+    {
+      url: "https://oneyerge.com/writing/llm-memory-requirements-consumer-gpu/",
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.85,
+      images: ["https://oneyerge.com/media/afterimage-social.png"],
+    },
     ...projects.map((project) => ({
       url: `https://oneyerge.com/work/${project.slug}/`,
       lastModified,
