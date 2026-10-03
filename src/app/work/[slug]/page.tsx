@@ -69,6 +69,8 @@ export default async function ProjectPage({ params }: Props) {
     (_, offset) => projects[(index + offset + 1) % projects.length],
   );
   const strengths = project.proof.split(" · ");
+  // A long single-word name does not fit the 11ch title box at full size.
+  const longName = project.name.length > 11 && !project.name.includes(" ");
   const canonical = `${SITE}/work/${project.slug}/`;
   const image = `${SITE}${project.socialImage}`;
   const schema = [
@@ -150,7 +152,12 @@ export default async function ProjectPage({ params }: Props) {
                 <span>{project.field}</span>
                 <span>{project.status}</span>
               </div>
-              <h1 id="project-title">{project.name}</h1>
+              <h1
+                id="project-title"
+                className={longName ? styles.longName : undefined}
+              >
+                {project.name}
+              </h1>
               <p className={styles.headline}>{project.headline}</p>
               <p className={styles.description}>{project.description}</p>
               <div className={styles.actions}>

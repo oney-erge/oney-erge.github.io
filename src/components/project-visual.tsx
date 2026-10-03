@@ -61,12 +61,12 @@ export function ProjectVisual({
     );
   }
 
-  if (project.visual === "agentarium") {
+  if (project.visual === "agentgymnasium") {
     return (
-      <div className={`${className} ${styles.agentariumVisual}`}>
+      <div className={`${className} ${styles.agentgymnasiumVisual}`}>
         <Image
-          src="/media/agentarium-city.png"
-          alt="Agentarium tiny city simulation preview"
+          src="/media/agentgymnasium-city.png"
+          alt="AgentGymnasium tiny city simulation preview"
           fill
           className={styles.containImage}
         />

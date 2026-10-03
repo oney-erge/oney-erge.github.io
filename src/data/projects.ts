@@ -2,7 +2,7 @@ export type ProjectVisual =
   | "ybm"
   | "afterimage"
   | "localdeploy"
-  | "agentarium"
+  | "agentgymnasium"
   | "creature"
   | "segcraft";
 
@@ -221,9 +221,9 @@ export const projects: Project[] = [
       "Fit estimates cannot account perfectly for every driver, runtime, context, or background workload. The local server is not designed to be exposed directly to the public internet.",
   },
   {
-    slug: "agentarium-ai-agent-physics-sandbox",
-    name: "Agentarium",
-    repo: "Agentarium",
+    slug: "agentgymnasium-ai-agent-physics-sandbox",
+    name: "AgentGymnasium",
+    repo: "AgentGymnasium",
     field: "Agent evaluation",
     status: "Simulation platform",
     headline: "Bring AI agents and physics into the same experiment.",
@@ -237,17 +237,17 @@ export const projects: Project[] = [
       "Choose a reference challenge, run one agent trial, then replay the trace and inspect the score.",
     proof: "24 explicit tools · Explainable scores · Replayable trials",
     tags: ["Agent evaluation", "Physics simulation", "Reproducible trials"],
-    visual: "agentarium",
-    image: "/media/agentarium-city.png",
-    socialImage: "/media/agentarium-social.png",
-    seoTitle: "Agentarium AI Agent Evaluation in Physics Simulations",
+    visual: "agentgymnasium",
+    image: "/media/agentgymnasium-city.png",
+    socialImage: "/media/agentgymnasium-social.png",
+    seoTitle: "AgentGymnasium AI Agent Evaluation in Physics Simulations",
     seoDescription:
-      "Agentarium is a visual AI physics sandbox for replayable agent experiments, validated tools, explainable scoring, and paired model evaluation.",
+      "AgentGymnasium is a visual AI physics sandbox for replayable agent experiments, validated tools, explainable scoring, and paired model evaluation.",
     searchIntent: "Evaluate AI agents in reproducible physics simulations",
     question:
       "How do you evaluate an agent that must build, observe a physical result, and improve its own design?",
     overview: [
-      "Agentarium gives an AI agent a challenge, a simulated world, an engine, and a set of explicit tools. The design is validated, simulated, replayed, and scored before the agent receives evidence for its next attempt.",
+      "AgentGymnasium gives an AI agent a challenge, a simulated world, an engine, and a set of explicit tools. The design is validated, simulated, replayed, and scored before the agent receives evidence for its next attempt.",
       "The visual interface connects setup, live simulation, durable history, paired experiments, synchronized comparison, physical adapters, and a deterministic catalog of reference scenes.",
     ],
     workflow: [

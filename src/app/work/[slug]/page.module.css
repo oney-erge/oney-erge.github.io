@@ -705,3 +705,22 @@
     width: 100%;
   }
 }
+
+/* Long single-word names (for example AgentGymnasium) do not fit the 11ch title box at the
+   full size, so scale the title down at each breakpoint and widen the box to match. */
+.hero h1.longName {
+  max-width: 15ch;
+  font-size: calc(clamp(3.7rem, 6vw, 5.75rem) * 0.72);
+}
+
+@media (max-width: 820px) {
+  .hero h1.longName {
+    font-size: calc(clamp(3.35rem, 15vw, 5.2rem) * 0.72);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1.longName {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
+  }
+}
