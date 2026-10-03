@@ -33,10 +33,10 @@ const projectCopy: Record<string, { outcome: string; detail: string; evidence: s
       "LocalDeploy inspects your hardware, estimates which models fit, lets you find and pull them from one UI, manages compatible runtimes, and measures the speed, quality, and memory use you actually get.",
     evidence: "Hardware fit · Runtime control · Repeatable benchmarks",
   },
-  "agentarium-ai-agent-physics-sandbox": {
+  "agentgymnasium-ai-agent-physics-sandbox": {
     outcome: "Bring AI agents and physics into the same experiment.",
     detail:
-      "Agentarium gives an agent a simulated world, explicit tools, and physical challenges, then measures what it builds, what happens, and how its next attempt changes.",
+      "AgentGymnasium gives an agent a simulated world, explicit tools, and physical challenges, then measures what it builds, what happens, and how its next attempt changes.",
     evidence: "24 explicit tools · Explainable scores · Replayable trials",
   },
   "creature-lab-robot-morphology": {
