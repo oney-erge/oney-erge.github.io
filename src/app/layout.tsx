@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { FEED_ALTERNATES } from "@/data/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: {
     canonical: "https://oneyerge.com/",
+    ...FEED_ALTERNATES,
   },
   authors: [{ name: "Oney Erge", url: "https://github.com/oney-erge" }],
   creator: "Oney Erge",

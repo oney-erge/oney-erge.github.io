@@ -23,7 +23,7 @@ export default function NotFound() {
       <p>The link may be out of date, or the page may have moved. Here are some places to go instead.</p>
       <nav className={styles.actions} aria-label="Suggested pages">
         <a href="/">Home <Arrow /></a>
-        <a href="/#work">Selected work <Arrow /></a>
+        <a href="/#work">Projects <Arrow /></a>
         <a href="/#contact">Contact <Arrow /></a>
       </nav>
     </main>

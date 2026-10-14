@@ -19,6 +19,9 @@ export type WritingPost = {
   };
 };
 
+export const WRITING_DESCRIPTION =
+  "Long-form technical writing by Oney Erge about language models, local AI, inference systems, agents, simulation, and the measurements behind the work.";
+
 /** Published posts in reverse chronological order. */
 export const writingPosts: WritingPost[] = [
   {
