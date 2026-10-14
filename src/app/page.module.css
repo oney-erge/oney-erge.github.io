@@ -372,22 +372,6 @@
   letter-spacing: -0.045em;
 }
 
-.writingGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
-  list-style: none;
-}
-
-.writingGrid > li {
-  min-width: 0;
-}
-
-.writingGrid[data-count="1"] > li,
-.writingGrid[data-count="3"] > li:first-child {
-  grid-column: 1 / -1;
-}
-
 .timeline {
   max-width: 70rem;
   list-style: none;
@@ -974,11 +958,6 @@
 
   .projectSummary {
     font-size: 0.98rem;
-  }
-
-  .writingGrid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
   }
 
   .timeline > li {

@@ -1,0 +1,162 @@
+<article class="post" id="post-root">
+  <header class="col hero">
+    <p class="kicker">Running large language models on small GPUs · Part 3</p>
+    <h1>Moving weights from storage to the GPU during streamed inference</h1>
+    <p class="deck">In <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a>, loading Qwen3-14B one part at a time ran the 29.5&nbsp;GB model in under 2&nbsp;GB of GPU memory, but each generated token took 27 to 33 seconds. This part follows one weight from storage to the GPU to see where that time goes, and when it actually delays the answer.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
+  </header>
+
+  <div class="col prose">
+    <p>Every generated token passes through every decoder layer, so in streamed execution every token also needs every weight that is not already on the GPU. With nothing kept on the GPU, the whole model makes the trip from storage once per pass.</p>
+    <p>That trip has up to three steps. Each step uses a different part of the computer, and the parts run at very different speeds.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-path">
+    <h2 id="h-path">The path from storage to the GPU</h2>
+    <p>A weight that is not on the GPU starts in one of two places. Storage, here the laptop's SSD, keeps the model files permanently. RAM, the computer's main memory, is faster but smaller, and it is emptied when the computer turns off.</p>
+    <p>To be used, a weight is read from the SSD into RAM and then copied over the PCIe connection into GPU memory, the only memory the GPU computes from at full speed (Part&nbsp;1).</p>
+  </section>
+
+  <div class="wide block">
+    <figure class="path" aria-labelledby="path-cap">
+      <ol class="hops">
+        <li class="hop"><span class="hop-name">SSD</span><span class="hop-note">Model files</span></li>
+        <li class="link"><span class="link-step">Read</span><span class="link-speed">2.3&nbsp;GB/s</span><span class="link-note">measured, cold</span></li>
+        <li class="hop"><span class="hop-name">RAM</span><span class="hop-note">Main memory</span></li>
+        <li class="link"><span class="link-step">Unpack, copy over PCIe</span><span class="link-speed">≤&nbsp;32&nbsp;GB/s</span><span class="link-note">PCIe specification</span></li>
+        <li class="hop gpu"><span class="hop-name">GPU memory</span><span class="hop-note">448&nbsp;GB/s to the GPU's processor</span></li>
+      </ol>
+      <figcaption id="path-cap"><b>Figure 1.</b> The path of a streamed weight on my laptop. The SSD speed was measured by reading a stored model file after clearing the operating system's page cache <a class="cite" href="#ref-7">[7]</a>. The PCIe and GPU-memory speeds are specifications <a class="cite" href="#ref-1">[1]</a>.</figcaption>
+    </figure>
+  </div>
+
+  <div class="col prose">
+    <p>The operating system keeps recently read files in unused RAM, called the <strong>page cache</strong>, so reading the same file again can be much faster. On my laptop, a repeated read of the same file reached 16.6&nbsp;GB/s, about 7 times the cold read <a class="cite" href="#ref-7">[7]</a>. The measurements in this series clear the page cache before each run, so they start from the cold speed. The page cache returns in Part&nbsp;4.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-steps">
+    <h2 id="h-steps">Three steps for each weight</h2>
+    <p>Before the GPU can use a weight, the weight is read from the SSD, unpacked if it is stored compressed, and copied to GPU memory. The time until it is ready is roughly</p>
+    <div class="equation" role="group" aria-label="Equation 1">
+      <math display="block"><msub><mi>t</mi><mtext>prep</mtext></msub><mo>&#x2248;</mo><mfrac><msub><mi>S</mi><mtext>disk</mtext></msub><msub><mi>b</mi><mtext>disk</mtext></msub></mfrac><mo>+</mo><msub><mi>t</mi><mtext>unpack</mtext></msub><mo>+</mo><mfrac><mi>S</mi><msub><mi>b</mi><mtext>PCIe</mtext></msub></mfrac></math>
+      <span class="eqn">(1)</span>
+    </div>
+    <p class="where">where S<sub>disk</sub> is the number of bytes stored on the SSD, b<sub>disk</sub> is the read speed, t<sub>unpack</sub> is the unpacking time (zero for a weight stored uncompressed), S is the size of the unpacked weight, and b<sub>PCIe</sub> is the copy speed.</p>
+    <p>Table 1 applies Eq. (1) to uncompressed weights with the speeds in Figure 1.</p>
+  </section>
+
+  <div class="col block">
+    <p class="tcap"><b>Table 1.</b> Reading and copying time for Qwen3-14B weights stored uncompressed, calculated from the speeds in Figure 1. These are lower bounds: the PCIe value is the specification maximum.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Step</th><th scope="col" class="num">One decoder layer, 0.66&nbsp;GB</th><th scope="col" class="num">Whole model, 29.5&nbsp;GB</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="wrap">Read from the SSD at 2.3&nbsp;GB/s</th><td class="num">0.29&nbsp;s</td><td class="num">13&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Copy over PCIe at 32&nbsp;GB/s</th><td class="num">0.02&nbsp;s</td><td class="num">0.9&nbsp;s</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col prose">
+    <p>Reading dominates. The copy over PCIe, which is often blamed for slow offloading, is more than 10 times faster than the cold read here.</p>
+    <p>Reading the whole model once takes about 13&nbsp;seconds, close to half of the 27&nbsp;seconds per token that AirLLM measured in Part&nbsp;2. The measured time also includes processing the input prompt, the computation, and the software work around each step.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-compress">
+    <h2 id="h-compress">Lossless compression: fewer bytes to read, more work to unpack</h2>
+    <p>If reading dominates, reading fewer bytes should help.</p>
+    <p>Afterimage, the engine this series builds toward, stores the weights compressed without loss <a class="cite" href="#ref-7">[7]</a>. A BF16 number has 1 sign bit, 8 exponent bits, and 7 mantissa bits. Only a few exponent values are common, so Afterimage re-encodes the exponent with a Huffman code, which gives frequent values shorter codes <a class="cite" href="#ref-2">[2]</a>, the same idea as DFloat11 <a class="cite" href="#ref-3">[3]</a>. Unpacking restores exactly the released bits.</p>
+    <p>For Qwen3-14B, this shrinks the stored weights from 29.5&nbsp;GB to <strong>20.3&nbsp;GB</strong>, 1.45 times smaller. At 2.3&nbsp;GB/s, that saves about 4&nbsp;seconds of reading per pass through the model.</p>
+    <p>The saving is not free. Every compressed weight must be unpacked before use, which adds t<sub>unpack</sub> to Eq. (1). Compression shortens the time to a ready weight only when</p>
+    <div class="equation" role="group" aria-label="Equation 2">
+      <math display="block"><mfrac><mrow><mi>S</mi><mo>&#x2212;</mo><msub><mi>S</mi><mtext>disk</mtext></msub></mrow><msub><mi>b</mi><mtext>disk</mtext></msub></mfrac><mo>&gt;</mo><msub><mi>t</mi><mtext>unpack</mtext></msub></math>
+      <span class="eqn">(2)</span>
+    </div>
+    <p class="where">that is, when the reading time it saves is longer than the unpacking time it adds.</p>
+    <p>In my measurements, it was not. At the minimum-memory point, Afterimage with compression alone took 33&nbsp;seconds per token against AirLLM's 27 (Part&nbsp;2, Table&nbsp;2): the reading time it saved was spent on unpacking.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-overlap">
+    <h2 id="h-overlap">Loading during computation</h2>
+    <p>Reading, unpacking, and copying do not have to stop the GPU. A streaming engine can <strong>prefetch</strong>: while the GPU computes one layer, the next layer is already on its way. FlexGen organizes its whole schedule around this overlap <a class="cite" href="#ref-4">[4]</a>.</p>
+    <p>If the next layer is ready before the GPU finishes, its loading time is hidden. If it is not, the GPU waits.</p>
+  </section>
+
+  <div class="wide block">
+    <figure class="lanes" aria-labelledby="lanes-cap">
+      <div class="scroll"><svg viewBox="0 0 760 196" role="img" aria-label="Timeline: the GPU computes layers 1 to 4 while the next layer loads. Loads of layers 2 and 3 finish in time; the load of layer 4 takes longer and the GPU waits before layer 4.">
+        <defs><pattern id="wait-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="tl-wait-bg"/><rect width="3" height="8" class="tl-wait-fg"/></pattern></defs>
+        <text class="c-label" x="0" y="52">GPU</text>
+        <text class="c-label" x="0" y="122">Loading</text>
+        <rect class="tl-compute" x="96" y="30" width="120" height="36" rx="4"/><text class="tl-in" x="156" y="53">layer 1</text>
+        <rect class="tl-compute" x="220" y="30" width="120" height="36" rx="4"/><text class="tl-in" x="280" y="53">layer 2</text>
+        <rect class="tl-compute" x="344" y="30" width="120" height="36" rx="4"/><text class="tl-in" x="404" y="53">layer 3</text>
+        <rect x="468" y="30" width="80" height="36" rx="4" fill="url(#wait-hatch)"/><text class="tl-warn" x="508" y="20">GPU waits</text>
+        <rect class="tl-compute" x="552" y="30" width="120" height="36" rx="4"/><text class="tl-in" x="612" y="53">layer 4</text>
+        <rect class="tl-load" x="96" y="104" width="92" height="28" rx="4"/><text class="tl-in2" x="142" y="123">load 2</text>
+        <rect class="tl-load" x="220" y="104" width="96" height="28" rx="4"/><text class="tl-in2" x="268" y="123">load 3</text>
+        <rect class="tl-load slow" x="344" y="104" width="204" height="28" rx="4"/><text class="tl-in2" x="446" y="123">load 4</text>
+        <text class="tl-ok" x="142" y="152">hidden</text><text class="tl-ok" x="268" y="152">hidden</text><text class="tl-warn" x="446" y="152">not ready in time</text>
+        <line class="c-grid" x1="96" y1="176" x2="740" y2="176"/><text class="c-text" x="740" y="192" text-anchor="end">time</text>
+      </svg></div>
+      <figcaption id="lanes-cap"><b>Figure 2.</b> Loading while computing, simplified. Each layer is loaded while the GPU computes the layer before it. Loading that finishes in time is hidden; loading that does not makes the GPU wait. The durations are illustrative.</figcaption>
+    </figure>
+  </div>
+
+  <div class="col prose">
+    <p>Only the waiting delays the answer. Two weights can take the same time to load and still cost very different amounts, depending on whether their loading overlaps with computation. Part&nbsp;4 returns to this point, because it decides which weights are worth keeping close.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-close">
+    <h2 id="h-close">Keeping some weights close</h2>
+    <p>The remaining option is to stop moving some weights at all. With spare GPU memory, some weights can stay there permanently. With spare RAM, others can stay there unpacked and skip the read and unpack steps. Table 2 compares measured operating points on my laptop.</p>
+  </section>
+
+  <div class="col block">
+    <p class="tcap"><b>Table 2.</b> Measured operating points for Qwen3-14B BF16 on the RTX 3080 Laptop GPU: 4 prompts, 4 generated tokens each, greedy decoding, cold page cache. Every method produced the same output tokens. Source: Afterimage results <a class="cite" href="#ref-7">[7]</a>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Method</th><th scope="col" class="num">Measured PyTorch peak</th><th scope="col" class="num">Request time per generated token</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="wrap">AirLLM 3.2.0, one layer at a time <a class="cite" href="#ref-6">[6]</a></th><td class="num">1.6&nbsp;GB</td><td class="num">27&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Afterimage, compressed, minimum memory</th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
+          <tr class="hl"><th scope="row" class="wrap">Afterimage, compressed, 4&nbsp;GB of weights kept on the GPU</th><td class="num">3.9&nbsp;GB</td><td class="num">17&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Hugging Face Accelerate, weights on GPU, RAM, and SSD <a class="cite" href="#ref-5">[5]</a></th><td class="num">3.8&nbsp;GB</td><td class="num">14&nbsp;s</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col prose">
+    <p>With about 4&nbsp;GB, both approaches take 14 to 17&nbsp;seconds per token instead of 27 to 33. The extra memory is spent on weights that no longer make the trip.</p>
+    <p>This is also where compression finally helps. With fewer bytes left to read and unpacking done in larger pieces, Afterimage's 4&nbsp;GB plan runs 1.9 times faster than its own minimum-memory point.</p>
+    <p>That leaves the question this series has been building to. A few gigabytes of spare memory hold only some of the weights. Afterimage's 4&nbsp;GB plan chose them with a sensible rule: keep the weights that save the most data movement per byte of memory they occupy.</p>
+    <p><strong>Part&nbsp;4 shows why that rule can still keep the wrong weights.</strong></p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-conc">
+    <h2 id="h-conc">Conclusions</h2>
+    <p>The trip of a streamed weight from storage to the GPU was traced on my laptop and compared with measured operating points. The following were concluded:</p>
+    <ol class="conclusions">
+      <li>Each weight is read from the SSD, unpacked if it is compressed, and copied over PCIe. With a cold page cache, reading at 2.3&nbsp;GB/s dominates: about 13&nbsp;seconds per pass through the 29.5&nbsp;GB model, against under 1&nbsp;second for the copy.</li>
+      <li>Lossless compression reduces the stored weights from 29.5&nbsp;GB to 20.3&nbsp;GB, but at the minimum-memory point the unpacking it adds outweighed the reading it saves: 33&nbsp;seconds per token against 27.</li>
+      <li>Loading that overlaps with computation is hidden. Only loading that is not ready when the GPU needs it delays the answer.</li>
+      <li>Keeping some weights close, with about 4&nbsp;GB of GPU memory, cut the time per token to 14 to 17&nbsp;seconds. This is also where compression starts to pay off.</li>
+    </ol>
+    <p>The open question is which weights should get the spare memory. The next part, <a href="/writing/schedule-aware-exact-weight-placement/">Part&nbsp;4</a>, answers it with the method in my paper, which decides by replaying a recorded request.</p>
+  </section>
+
+  <section class="col prose refs-section" aria-labelledby="h-refs">
+    <h2 id="h-refs">References</h2>
+    <ol class="refs">
+      <li id="ref-1"><span>Hardware specifications: <a href="https://technical.city/en/video/GeForce-RTX-3080-mobile">GeForce RTX 3080 Mobile</a>, 8&nbsp;GB GDDR6, 448&nbsp;GB/s memory bandwidth; <a href="https://www.rambus.com/blogs/pci-express-4/">PCIe 4.0 x16</a>, about 32&nbsp;GB/s per direction.</span></li>
+      <li id="ref-2"><span>D. A. Huffman. 1952. “<a href="https://doi.org/10.1109/JRPROC.1952.273898">A Method for the Construction of Minimum-Redundancy Codes</a>.” <i>Proceedings of the IRE</i> 40 (9).</span></li>
+      <li id="ref-3"><span>T. Zhang et al. 2025. “<a href="https://arxiv.org/abs/2504.11651">70% Size, 100% Accuracy: Lossless LLM Compression for Efficient GPU Inference via Dynamic-Length Float (DFloat11)</a>.” NeurIPS 2025.</span></li>
+      <li id="ref-4"><span>Y. Sheng et al. 2023. “<a href="https://proceedings.mlr.press/v202/sheng23a.html">FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU</a>.” ICML 2023.</span></li>
+      <li id="ref-5"><span>Hugging Face. “<a href="https://huggingface.co/docs/accelerate/usage_guides/big_modeling">Big Model Inference</a>.” Accelerate documentation.</span></li>
+      <li id="ref-6"><span><a href="https://github.com/lyogavin/airllm">AirLLM 3.2.0</a>.</span></li>
+      <li id="ref-7"><span>O. Erge, <a href="https://github.com/oney-erge/Afterimage">Afterimage</a>. Measured operating points in the <a href="https://github.com/oney-erge/Afterimage#results">README</a> and <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/HOW_IT_WORKS.md"><code>docs/HOW_IT_WORKS.md</code></a>; the cold and warm read measurements in <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/REPRODUCE.md"><code>docs/REPRODUCE.md</code></a>.</span></li>
+    </ol>
+  </section>
+</article>

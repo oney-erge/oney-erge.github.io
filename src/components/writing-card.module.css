@@ -1,5 +1,6 @@
 .card {
   position: relative;
+  height: 100%;
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -21,11 +22,6 @@
   flex-direction: column;
 }
 
-.spotlight .cardLink {
-  display: grid;
-  grid-template-columns: minmax(20rem, 0.88fr) minmax(0, 1.12fr);
-}
-
 .cover {
   position: relative;
   z-index: 0;
@@ -41,10 +37,6 @@
     radial-gradient(circle at 82% 14%, rgb(86 139 255 / 42%), transparent 31%),
     linear-gradient(145deg, #07101d 4%, #0b1d38 55%, #123f78 130%);
   isolation: isolate;
-}
-
-.spotlight .cover {
-  min-height: 23rem;
 }
 
 .cover::before {
@@ -159,21 +151,12 @@
 .content {
   display: flex;
   min-width: 0;
-  flex-direction: column;
   flex: 1;
-  min-height: 20rem;
-  padding: clamp(1.45rem, 3vw, 2rem);
-}
-
-.spotlight .content {
-  min-height: 23rem;
+  flex-direction: column;
+  padding: 1.15rem 1.2rem 1.2rem;
 }
 
 .meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.85rem;
-  align-items: center;
   color: var(--faint);
   font-size: var(--type-label);
   font-weight: 680;
@@ -181,56 +164,20 @@
   text-transform: uppercase;
 }
 
-.meta span:first-child {
-  width: 100%;
-  color: var(--accent);
-  font-weight: 760;
-  letter-spacing: 0.09em;
-}
-
-.meta time + span::before {
-  margin-right: 0.85rem;
-  color: var(--line-strong);
-  content: "·";
-}
-
-.content h3 {
-  max-width: 37rem;
-  margin-top: 1.15rem;
-  font-size: clamp(1.75rem, 2.6vw, 2.2rem);
-  font-weight: 650;
-  line-height: 1.04;
-  letter-spacing: -0.052em;
+.content h4 {
+  margin-top: 0.75rem;
+  font-size: 1.12rem;
+  font-weight: 660;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
-.description {
-  max-width: 39rem;
-  margin-top: 1rem;
+.hook {
+  margin-top: 0.6rem;
   color: var(--muted);
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 0.96rem;
-  line-height: 1.58;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 1.3rem;
-  list-style: none;
-}
-
-.tags li {
-  padding: 0.3rem 0.58rem;
-  color: var(--ink-soft);
-  background: var(--surface-muted);
-  border-radius: 999px;
-  font-size: var(--type-label);
-  font-weight: 650;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .readLink {
@@ -239,7 +186,7 @@
   align-items: center;
   align-self: flex-start;
   margin-top: auto;
-  padding-top: 1.5rem;
+  padding-top: 1rem;
   color: var(--ink);
   font-size: 0.88rem;
   font-weight: 720;
@@ -259,6 +206,22 @@
 .card:hover .readLink svg,
 .card:focus-within .readLink svg {
   transform: translate(2px, -2px);
+}
+
+.upcoming {
+  background: var(--surface-muted);
+  box-shadow: none;
+}
+
+.upcoming:hover,
+.upcoming:focus-within {
+  border-color: var(--line);
+  box-shadow: none;
+  transform: none;
+}
+
+.upcoming .cover {
+  opacity: 0.55;
 }
 
 .coverCompact {
@@ -281,42 +244,28 @@
 }
 
 @media (max-width: 760px) {
-  .spotlight .cardLink {
-    display: flex;
-  }
-
-  .spotlight .cover,
-  .cover {
-    min-height: 15.5rem;
-    padding: 1.2rem;
-  }
-
-  .coverCore {
-    margin-block: 1.9rem 1.5rem;
-  }
-
-  .coverCore strong {
-    font-size: clamp(3.5rem, 16vw, 4.7rem);
-  }
-
-  .spotlight .content,
-  .content {
-    min-height: 0;
-    padding: 1.45rem;
-  }
-
   .coverCompact {
     min-height: 0;
     aspect-ratio: 16 / 9;
     padding: 1rem;
   }
 
-  .content h3 {
-    font-size: clamp(1.75rem, 7vw, 2.25rem);
+  .card .coverCompact {
+    aspect-ratio: auto;
+    padding: 0.9rem 1.2rem;
   }
 
-  .readLink {
-    margin-top: 0.5rem;
+  .card .coverCompact .coverCore {
+    margin-block: 0.7rem 0;
+  }
+
+  .card .coverCompact .coverCore strong {
+    font-size: 2.5rem;
+  }
+
+  .card .coverCompact .memoryBar,
+  .card .coverCompact .coverBottom {
+    display: none;
   }
 }
 

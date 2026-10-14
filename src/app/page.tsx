@@ -3,10 +3,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { HomepageSectionNav } from "@/components/homepage-section-nav";
 import { ProjectVisual } from "@/components/project-visual";
-import { WritingCard } from "@/components/writing-card";
+import { WritingSeriesFeature } from "@/components/writing-series";
 import { projects, type Project } from "@/data/projects";
 import { SITE_MODIFIED, SITE_PUBLISHED, SITE_YEAR } from "@/data/site";
-import { getFeaturedWritingPosts } from "@/data/writing";
+import { getSeriesParts, writingSeries } from "@/data/writing";
 import styles from "./page.module.css";
 
 const GITHUB = "https://github.com/oney-erge";
@@ -340,8 +340,6 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export default function Home() {
-  const featuredPosts = getFeaturedWritingPosts();
-
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema).replace(/</g, "\\u003c") }} />
@@ -375,17 +373,9 @@ export default function Home() {
           <header className={styles.writingHeader}>
             <h2 id="writing-heading">Writing</h2>
           </header>
-          <ol className={styles.writingGrid} data-count={featuredPosts.length}>
-            {featuredPosts.map((post, index) => (
-              <li key={post.slug}>
-                <WritingCard
-                  post={post}
-                  position={index}
-                  layout={featuredPosts.length === 1 || (featuredPosts.length === 3 && index === 0) ? "spotlight" : "standard"}
-                />
-              </li>
-            ))}
-          </ol>
+          {writingSeries.map((series) => (
+            <WritingSeriesFeature key={series.id} series={series} parts={getSeriesParts(series.id)} />
+          ))}
           <Link className={styles.textLink} href="/writing/">Browse all writing <Arrow /></Link>
         </section>
 

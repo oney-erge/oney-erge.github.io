@@ -53,3 +53,7 @@ next-env.d.ts
 !/src/app/writing/page.tsx
 !/src/app/writing/page.module.css
 !/src/app/writing/llm-memory-requirements-consumer-gpu/
+!/src/app/writing/_shared/
+!/src/app/writing/kv-cache-streamed-inference-consumer-gpu/
+!/src/app/writing/moving-weights-storage-to-gpu/
+!/src/app/writing/schedule-aware-exact-weight-placement/

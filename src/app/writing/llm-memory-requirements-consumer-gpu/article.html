@@ -3,12 +3,12 @@
     <p class="kicker">Running large language models on small GPUs · Part 1</p>
     <h1>Memory requirements of language model inference on a consumer GPU</h1>
     <p class="deck">I run language models on a laptop GPU with 8&nbsp;GB of memory, a size I think is common for consumer hardware. This series is about what happens when the model I want to run is much larger than that memory, and what can be done about it without changing the released model weights. This first part calculates what has to fit in that memory, and why this 14B model does not.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>12 min read</span></div>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>8 min read</span></div>
   </header>
 
   <div class="col prose">
     <p>A language model is, in large part, a collection of numbers called weights that are learned during training. Text is converted into lists of numbers and passed through a series of layers. Each layer transforms the list using its own weights, then hands the result to the next layer.</p>
-    <p>A GPU is fast at this work because it runs thousands of multiplications at the same time. That speed only helps if the weights arrive as fast as the GPU can use them. The GPU's own memory sits next to its processor on the graphics card and, on my GPU, can be read at about 448&nbsp;GB/s <a class="cite" href="#ref-5">[5]</a>. Data in the computer's main memory or on disk must first travel over the PCIe connection, which carries at most about 32&nbsp;GB/s <a class="cite" href="#ref-5">[5]</a>, more than 10 times less. Storage is slower still. For this reason, the weights are normally loaded into GPU memory before inference, the process of using a trained model to generate text.</p>
+    <p>A GPU is fast at this work because it runs thousands of multiplications at the same time. That speed only helps if the weights arrive as fast as the GPU can use them. The GPU's own memory sits next to its processor on the graphics card and, on my GPU, can be read at about 448&nbsp;GB/s <a class="cite" href="#ref-3">[3]</a>. Data in the computer's main memory or on disk must first travel over the PCIe connection, which carries at most about 32&nbsp;GB/s <a class="cite" href="#ref-3">[3]</a>, more than 10 times less. Storage is slower still. For this reason, the weights are normally loaded into GPU memory before inference, the process of using a trained model to generate text.</p>
     <p>The practical problem is size.</p>
     <p>Throughout this series, I use Qwen3-14B, the 14B model of the Qwen3 family that Alibaba's Qwen team released on April 29, 2025 <a class="cite" href="#ref-1">[1]</a>. Its released BF16 weights require about 29.5&nbsp;GB. My GPU, an NVIDIA RTX 3080 Laptop GPU, has 8&nbsp;GB of advertised memory.</p>
     <p>There are two practical ways to deal with this mismatch. One is to make the weights smaller, normally through quantization. The other is to keep most of the weights outside GPU memory and load them only when they are needed.</p>
@@ -63,8 +63,8 @@
   <div class="col prose">
     <p>BF16 was designed to keep the range of FP32 in half the memory <a class="cite" href="#ref-2">[2]</a>. It is the released format for Qwen3-14B. With N = 14.8&nbsp;billion weights and b = 2&nbsp;bytes, Qwen3-14B needs 29.5&nbsp;GB.</p>
     <p>Quantization reduces this requirement. For Qwen3-14B, 8-bit weights need about 14.8&nbsp;GB and 4-bit weights need about 7.4&nbsp;GB, before the additional metadata used by practical quantization formats.</p>
-    <p><strong>This series keeps BF16.</strong> In this series, exact weights means that inference ultimately uses the same BF16 values released with the model, not an 8-bit or 4-bit approximation. Afterimage <a class="cite" href="#ref-6">[6]</a>, the engine this series builds toward, is designed to run these exact weights: it does not introduce weight error through lossy quantization.</p>
-    <p>Where this post reports the same output tokens across methods, such as in Table 6, that is a separate measured result and not a guarantee that follows automatically from using exact weights.</p>
+    <p><strong>This series keeps BF16.</strong> In this series, exact weights means that inference ultimately uses the same BF16 values released with the model, not an 8-bit or 4-bit approximation. Afterimage <a class="cite" href="#ref-4">[4]</a>, the engine this series builds toward, is designed to run these exact weights: it does not introduce weight error through lossy quantization.</p>
+    <p>Where this series reports the same output tokens across methods, such as in Part 2, that is a separate measured result and not a guarantee that follows automatically from using exact weights.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-parts">
@@ -181,203 +181,15 @@
     <p>This sequential structure is important. The model contains 29.5&nbsp;GB of weights, but all 29.5&nbsp;GB do not have to be on the GPU at the same instant.</p>
   </div>
 
-  <section class="col prose" aria-labelledby="h-kv">
-    <h2 id="h-kv">Memory for the prompt and the answer: the KV cache</h2>
-    <p>LLMs generate text one token at a time. After reading the prompt, they produce the first token of the answer, add it to the sequence, and repeat. Each new token depends on the tokens before it.</p>
-    <p>The operation that retrieves information from earlier tokens is called attention.</p>
-    <p class="note">The next subsection shows how queries, keys, and values are used in attention. If you already know how attention works, skip ahead to <strong>Storing keys and values instead of recomputing them</strong>.</p>
-
-    <h3>A closer look at attention</h3>
-    <p>Queries, keys, values, and attention are fundamental pieces of the transformer architecture <a class="cite" href="#ref-3">[3]</a>.</p>
-    <p>In each layer, attention computes three short lists of numbers for every token: a query, a key, and a value. The query of the newest token is compared with the keys of the tokens available to it. A stronger match gives a higher score, which causes more of that token's value to contribute to the output.</p>
-    <p>Table 5 works through this for the text “the dog ran.” It scores each available token against the newest one, “ran,” converts those scores into weights, and blends the values into one output for “ran.”</p>
-    <p>For this simplified example, I omit the usual score scaling and the learned projections that produce queries, keys, and values, and show only the part needed to explain the KV cache.</p>
-  </section>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 5.</b> A simple attention step for the newest token, “ran,” whose query is [0, 2]. The numbers are illustrative.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Token</th><th scope="col">Key</th><th scope="col">Value</th><th scope="col" class="num">Score, query × key</th><th scope="col" class="num">Weight</th><th scope="col">Contribution, weight × value</th></tr></thead>
-        <tbody>
-          <tr><td>the</td><td class="mono">[1, 0]</td><td class="mono">[0.2, 0.1]</td><td class="num">0</td><td class="num">0.06</td><td class="mono">[0.01, 0.01]</td></tr>
-          <tr><td>dog</td><td class="mono">[0, 1]</td><td class="mono">[0.9, 0.4]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.42, 0.19]</td></tr>
-          <tr><td>ran</td><td class="mono">[1, 1]</td><td class="mono">[0.5, 0.7]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.24, 0.33]</td></tr>
-          <tr class="total"><th scope="row">Blended output for “ran”</th><td></td><td></td><td></td><td></td><td class="mono">[0.67, 0.52]</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col prose">
-    <p>Each score comes from multiplying the query by that token's key, number by number, and adding the results. Softmax then converts the scores into weights that add up to 1. The output is the sum of every token's value multiplied by its weight:</p>
-    <div class="equation" role="group" aria-label="Equation 3">
-      <math display="block"><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mfrac><msup><mi>e</mi><msub><mi>s</mi><mi>i</mi></msub></msup><mrow><msub><mo>&#x2211;</mo><mi>j</mi></msub><msup><mi>e</mi><msub><mi>s</mi><mi>j</mi></msub></msup></mrow></mfrac><mo>,</mo><mspace width="1em"></mspace><mtext>output</mtext><mo>=</mo><munder><mo>&#x2211;</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi>v</mi><mi>i</mi></msub></math>
-      <span class="eqn">(3)</span>
-    </div>
-    <p class="where">where s<sub>i</sub> is the score of token i, w<sub>i</sub> is its weight, and v<sub>i</sub> is its value.</p>
-
-    <h3>Storing keys and values instead of recomputing them</h3>
-    <p>When the model adds the next token, “in,” the keys and values of the earlier tokens do not change.</p>
-    <p>Without storing them, the model would have to recompute those values every time another token is generated. Instead, inference software computes them once and keeps them in GPU memory.</p>
-    <p>This stored information is the <strong>KV cache</strong>.</p>
-    <p>During token-by-token decoding, the new token produces a new key and value in every decoder layer. The keys and values already stored for earlier tokens are reused.</p>
-  </div>
-
-  <div class="wide block">
-    <figure class="kvgrid" id="fig-kvgrid" aria-labelledby="kvgrid-cap">
-      <div class="kvgrid-top">
-        <div class="legend">
-          <span><i class="sw prompt"></i>Prompt token</span>
-          <span><i class="sw answer"></i>Answer token</span>
-          <span><i class="sw newest"></i>Computed in this step</span>
-        </div>
-        <button type="button" class="btn" id="kv-step" data-role="step">Generate next token</button>
-      </div>
-      <div class="kvgrid-body" data-role="grid" aria-live="polite"></div>
-      <p class="kvgrid-count" data-role="count"></p>
-      <figcaption id="kvgrid-cap"><b>Figure 2.</b> KV cache of Qwen3-14B while it answers the input prompt “the dog ran.” Each cell holds one key and one value for every set of keys and values in that layer. Only the newest column is computed; the others are reused. Rows for layers 3 to 39 are not drawn.</figcaption>
-    </figure>
-  </div>
-
-  <div class="col prose">
-    <h3>Size of the KV cache</h3>
-    <p>Qwen3-14B has 40 query heads per layer but only 8 distinct sets of keys and values. Five query heads therefore share each key/value set.</p>
-    <p>This design is called <strong>grouped-query attention</strong> <a class="cite" href="#ref-4">[4]</a>. Compared with storing independent keys and values for all 40 heads, it reduces the KV-storage requirement by a factor of 5.</p>
-    <p>The memory of the KV cache is</p>
-    <div class="equation" role="group" aria-label="Equation 4">
-      <math display="block"><msub><mi>M</mi><mtext>KV</mtext></msub><mo>=</mo><mn>2</mn><mo>&#x00D7;</mo><mi>L</mi><mo>&#x00D7;</mo><msub><mi>n</mi><mtext>kv</mtext></msub><mo>&#x00D7;</mo><msub><mi>d</mi><mi>h</mi></msub><mo>&#x00D7;</mo><mi>b</mi><mo>&#x00D7;</mo><mi>T</mi></math>
-      <span class="eqn">(4)</span>
-    </div>
-    <p class="where">where the factor 2 counts keys and values, L, n<sub>kv</sub>, and d<sub>h</sub> come from Table 2, b is the bytes per number, and T is the number of tokens in the input prompt and answer together.</p>
-    <p>For Qwen3-14B in BF16,</p>
-    <div class="equation plain" role="group" aria-label="KV cache bytes per token calculation">
-      <math display="block"><mn>2</mn><mo>&#x00D7;</mo><mn>40</mn><mo>&#x00D7;</mo><mn>8</mn><mo>&#x00D7;</mo><mn>128</mn><mo>&#x00D7;</mo><mn>2</mn><mo>=</mo><mn>163,840</mn><mtext>&nbsp;bytes</mtext></math>
-    </div>
-    <p>or about <strong>0.16&nbsp;MB per token</strong>.</p>
-    <p>An input prompt and answer of 8K tokens together need about <strong>1.3&nbsp;GB</strong>.</p>
-    <p>At the model's standard 32K-token context, the KV cache alone needs about <strong>5.4&nbsp;GB</strong>.</p>
-    <p>At 128K tokens, it needs about <strong>21&nbsp;GB</strong>, more than the whole GPU.</p>
-  </div>
-
-  <div class="wide block">
-    <figure class="chartfig" aria-labelledby="kv-cap">
-      <div class="chartwrap" id="fig-kvchart"></div>
-      <figcaption id="kv-cap"><b>Figure 3.</b> KV cache of Qwen3-14B as the prompt and answer grow, calculated with Eq. (4) for BF16. The dashed line marks the memory of my 8.6&nbsp;GB GPU.</figcaption>
-    </figure>
-  </div>
-
-  <section class="col prose" aria-labelledby="h-total">
-    <h2 id="h-total">Total memory for <span class="nw">Qwen3-14B</span> on an 8&nbsp;GB laptop GPU</h2>
-    <p>Eq. (1) can now be filled in.</p>
-    <p>Qwen3-14B needs about <strong>29.5&nbsp;GB</strong> for its BF16 weights. A short 3K-token input prompt and answer add about <strong>0.5&nbsp;GB</strong> for the KV cache. My laptop's system already occupies about <strong>2.2&nbsp;GB</strong>.</p>
-    <p>That is already more than <strong>32&nbsp;GB</strong>, before GPU software and temporary activations are even counted, far more than the GPU's 8&nbsp;GB.</p>
-    <p>Even the simple 4-bit weight estimate leaves essentially no room for the rest of the workload. About <strong>7.4&nbsp;GB</strong> of weights plus the measured <strong>2.2&nbsp;GB</strong> already used by the system exceed the physical capacity considered here before the KV cache, runtime allocations, and quantization metadata are added.</p>
-    <p>That does not mean a 4-bit Qwen3-14B cannot run on an 8&nbsp;GB system using memory-management techniques. It means the model weights cannot be treated as the only thing that has to fit.</p>
-    <p>The calculator below tests other combinations.</p>
-  </section>
-
-  <div class="col block">
-    <div class="calc" id="calc" aria-labelledby="calc-h">
-      <div class="calc-head"><p id="calc-h">Memory check for Qwen3-14B</p><span>8.6&nbsp;GB laptop GPU</span></div>
-      <div class="controls">
-        <fieldset class="seg">
-          <legend>Weight format</legend>
-          <label for="calc-bf16"><input id="calc-bf16" type="radio" name="calc-format" value="2" checked>BF16</label>
-          <label for="calc-int8"><input id="calc-int8" type="radio" name="calc-format" value="1">8-bit</label>
-          <label for="calc-int4"><input id="calc-int4" type="radio" name="calc-format" value="0.5">4-bit</label>
-        </fieldset>
-        <label class="check" for="calc-sys"><input id="calc-sys" type="checkbox" checked> Include system use (2.2&nbsp;GB)</label>
-      </div>
-      <div class="sliders">
-        <div class="slider">
-          <label for="calc-prompt">Input prompt tokens <output data-role="prompt-out">2K</output></label>
-          <input id="calc-prompt" type="range" min="0" max="32768" step="1024" value="2048">
-        </div>
-        <div class="slider">
-          <label for="calc-answer">Answer tokens <output data-role="answer-out">1K</output></label>
-          <input id="calc-answer" type="range" min="0" max="32768" step="1024" value="1024">
-        </div>
-      </div>
-      <div class="stack" aria-hidden="true">
-        <span class="s-sys" data-role="st-sys"></span><span class="s-w" data-role="st-w"></span><span class="s-k" data-role="st-k"></span>
-        <span class="s-cap" data-role="st-cap"><em>8.6&nbsp;GB GPU</em></span>
-      </div>
-      <dl class="readout">
-        <div><dt><i class="sw sys"></i>System</dt><dd data-role="r-sys"></dd></div>
-        <div><dt><i class="sw layer"></i>Weights</dt><dd data-role="r-w"></dd></div>
-        <div><dt><i class="sw kv"></i>KV cache (input prompt + answer)</dt><dd data-role="r-k"></dd></div>
-        <div><dt>Total</dt><dd data-role="r-t"></dd></div>
-      </dl>
-      <p class="verdict" data-role="verdict" role="status"></p>
-      <p class="note">Weights come from Eq. (2), and the KV cache from Eq. (4). GPU-software memory and activations are not included and must be measured separately. Quantized files are also slightly larger than N × b because they store scale factors and other metadata.</p>
-    </div>
-  </div>
-
-  <section class="col prose" aria-labelledby="h-split">
-    <h2 id="h-split">Loading one part of the model at a time</h2>
-    <p>The model still does not fit, but the calculation above suggests another option: the GPU does not need every weight at the same time.</p>
-    <p>The weights can stay outside GPU memory, and only the model part currently needed is loaded onto the GPU: load it, use it, release its weight memory, then continue to the next part.</p>
-    <p>Inference happens in two stages.</p>
-    <p>First, the <strong>prefill</strong> stage processes the input prompt and builds the initial KV cache.</p>
-    <p>After that, <strong>decoding</strong> begins. For one generated token, the simplified sequence is:</p>
-    <ol class="procedure">
-      <li><span>Step 1</span><span class="stepbody">Load the embedding information for the newest token and construct its initial representation.</span></li>
-      <li><span>Step 2</span><span class="stepbody">Load decoder layer 1 and process the new token using the keys and values already cached for earlier tokens. Store the new token's key and value for that layer, then release the layer's weights.</span></li>
-      <li><span>Step 3</span><span class="stepbody">Repeat the same operation through decoder layers 2 to 40, loading and releasing each layer's weights as execution progresses.</span></li>
-      <li><span>Step 4</span><span class="stepbody">Load the output head, score the possible next tokens, and select one. With greedy decoding, the highest-scoring token is selected.</span></li>
-    </ol>
-    <p>That sequence produces <strong>one new token</strong>. The newly selected token is then fed back into the same process.</p>
-    <p>The important change is in <strong>weight residency</strong>. Instead of keeping all 29.5&nbsp;GB of model weights on the GPU, streamed execution keeps only the model part currently being used, together with the KV cache, runtime allocations, and temporary working memory.</p>
-    <p>For Qwen3-14B, one decoder layer requires about <strong>0.66&nbsp;GB</strong>, while the output head requires about <strong>1.6&nbsp;GB</strong>.</p>
-    <p>The weight-residency requirement is therefore determined mainly by the model part currently loaded rather than by the sum of all model weights.</p>
-  </section>
-
-  <section class="col prose" aria-labelledby="h-measured">
-    <h2 id="h-measured">Measured streamed execution</h2>
-    <p>I measured two systems that load weights incrementally: AirLLM 3.2.0 and <strong>Afterimage exact minimum-memory</strong> <a class="cite" href="#ref-6">[6]</a>.</p>
-    <p>Both used the same Qwen3-14B BF16 checkpoint on my RTX 3080 Laptop GPU. The test used 4 prompts and 4 generated tokens per prompt with greedy decoding. Both methods produced the same output tokens.</p>
-  </section>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 6.</b> Minimum-memory measurements for Qwen3-14B BF16 on the RTX 3080 Laptop GPU. Source: Afterimage results <a class="cite" href="#ref-6">[6]</a>.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Method</th><th scope="col" class="num">Measured PyTorch peak</th><th scope="col" class="num">Request time per generated token</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">AirLLM 3.2.0</th><td class="num">1.6&nbsp;GB</td><td class="num">27&nbsp;s</td></tr>
-          <tr><th scope="row"><strong>Afterimage exact minimum-memory</strong></th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col prose">
-    <p>Peak GPU memory is PyTorch's measured whole-run peak. It can include activations and other PyTorch working allocations as well as weights, and it does not include every source of GPU memory use.</p>
-    <p><strong>Request time per generated token</strong> is the total request wall time divided by the four generated tokens. It includes prompt prefill and is therefore not an isolated steady-state decode measurement.</p>
-    <p>These results solve the capacity problem, but not the performance problem.</p>
-    <p>Both systems run the 29.5&nbsp;GB BF16 model with measured PyTorch peaks below 2&nbsp;GB in this configuration. The measured requests average <strong>27 to 33 seconds of wall time per generated token</strong>.</p>
-    <p>The model is no longer prevented from running because all of its weights cannot fit on the GPU. Instead, execution depends on repeatedly retrieving, preparing, transferring, and executing the weights required by each stage.</p>
-    <p>AirLLM is faster at this operating point. <strong>Afterimage exact minimum-memory</strong> also reconstructs its losslessly stored weights before execution, adding work that is examined later in this series.</p>
-    <p>Loading every layer from storage minimizes GPU-memory use, but it treats every weight as equally disposable. In practice, some weights may be worth keeping on the GPU, some may be worth keeping in system memory, and others may be cheap enough to reload.</p>
-    <p><strong>This starts to look like an optimization problem.</strong></p>
-    <p>Given fixed GPU and system-memory budgets, the question becomes which weights should remain in each memory tier and which should be retrieved again during execution.</p>
-    <p>The best choice may not be determined by weight size alone. It depends on when the weight is needed, how expensive it is to prepare and move, and whether that work delays generation or can overlap with something already running.</p>
-    <p>Later parts of this series will examine that problem.</p>
-  </div>
-
   <section class="col prose" aria-labelledby="h-conc">
     <h2 id="h-conc">Conclusions</h2>
-    <p>The GPU memory needed to run Qwen3-14B was calculated from its configuration and compared with my 8&nbsp;GB laptop GPU. The following were concluded:</p>
+    <p>The GPU memory needed to hold the weights of Qwen3-14B was calculated from its configuration and compared with my 8&nbsp;GB laptop GPU. The following were concluded:</p>
     <ol class="conclusions">
       <li>GPU memory holds five main items: system use, GPU software, weights, the KV cache, and activations. On my laptop, the system alone used 2.2&nbsp;GB before any model was loaded, leaving about 6.4&nbsp;GB of physical capacity.</li>
       <li>The released BF16 weights need 29.5&nbsp;GB, more than 3 times the GPU memory. Most of this is in 40 decoder layers of about 0.66&nbsp;GB each.</li>
-      <li>The KV cache stores keys and values for the input prompt and generated answer. It needs about 0.16&nbsp;MB per token and about 5.4&nbsp;GB at 32K tokens.</li>
-      <li>The model uses its major weight groups sequentially. Loading each group only when it is needed lowers the measured GPU peak to under 2&nbsp;GB in the tested AirLLM and Afterimage configurations.</li>
+      <li>The model uses its weights in sequence, one part after another, so all 29.5&nbsp;GB do not have to be on the GPU at the same instant.</li>
     </ol>
-    <p>Therefore, running the released BF16 model on this GPU requires most weights to remain outside GPU memory and be delivered as execution progresses.</p>
-    <p><strong>The memory problem has become an optimization problem:</strong> which weights should remain on the GPU, which should remain in system memory, and which should be retrieved again?</p>
-    <p>The next part examines the execution path of streamed inference to determine which operations lie on the critical path to the next token and which work can be overlapped or avoided.</p>
+    <p>The weights are not the only thing that has to fit. <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a> adds the memory that grows with the input prompt and the answer, the KV cache, and measures what happens when the model is run one part at a time.</p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">
@@ -385,10 +197,8 @@
     <ol class="refs">
       <li id="ref-1"><span>Qwen Team. 2025. “<a href="https://qwenlm.github.io/blog/qwen3/">Qwen3: Think Deeper, Act Faster</a>.” April 29, 2025. <a href="https://arxiv.org/abs/2505.09388"><i>Qwen3 Technical Report</i></a>. Model card and configuration: <a href="https://huggingface.co/Qwen/Qwen3-14B">Qwen/Qwen3-14B</a>.</span></li>
       <li id="ref-2"><span>Number formats and quantization: D. Kalamkar et al. 2019, “<a href="https://arxiv.org/abs/1905.12322">A Study of BFLOAT16 for Deep Learning Training</a>”; T. Dettmers et al. 2022, “<a href="https://arxiv.org/abs/2208.07339">LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale</a>,” NeurIPS 2022; T. Dettmers and L. Zettlemoyer. 2023, “<a href="https://arxiv.org/abs/2212.09720">The Case for 4-bit Precision: k-bit Inference Scaling Laws</a>,” ICML 2023.</span></li>
-      <li id="ref-3"><span>A. Vaswani et al. 2017. “<a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>.” NeurIPS 2017.</span></li>
-      <li id="ref-4"><span>J. Ainslie et al. 2023. “<a href="https://arxiv.org/abs/2305.13245">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a>.” EMNLP 2023.</span></li>
-      <li id="ref-5"><span>Hardware specifications: <a href="https://technical.city/en/video/GeForce-RTX-3080-mobile">GeForce RTX 3080 Mobile</a>, 8&nbsp;GB GDDR6, 448&nbsp;GB/s memory bandwidth; <a href="https://www.rambus.com/blogs/pci-express-4/">PCIe 4.0 x16</a>, about 32&nbsp;GB/s per direction.</span></li>
-      <li id="ref-6"><span><a href="https://github.com/lyogavin/airllm">AirLLM 3.2.0</a>. O. Erge, <a href="https://github.com/oney-erge/Afterimage">Afterimage</a>; measured tools and benchmark details in <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/HOW_IT_WORKS.md"><code>docs/HOW_IT_WORKS.md</code></a>.</span></li>
+      <li id="ref-3"><span>Hardware specifications: <a href="https://technical.city/en/video/GeForce-RTX-3080-mobile">GeForce RTX 3080 Mobile</a>, 8&nbsp;GB GDDR6, 448&nbsp;GB/s memory bandwidth; <a href="https://www.rambus.com/blogs/pci-express-4/">PCIe 4.0 x16</a>, about 32&nbsp;GB/s per direction.</span></li>
+      <li id="ref-4"><span>O. Erge, <a href="https://github.com/oney-erge/Afterimage">Afterimage</a>; measured tools and benchmark details in <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/HOW_IT_WORKS.md"><code>docs/HOW_IT_WORKS.md</code></a>.</span></li>
     </ol>
   </section>
 </article>

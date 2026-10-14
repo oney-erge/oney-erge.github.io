@@ -2,15 +2,8 @@ import Link from "next/link";
 import type { WritingPost } from "@/data/writing";
 import styles from "./writing-card.module.css";
 
-type Props = {
-  post: WritingPost;
-  position: number;
-  layout?: "standard" | "spotlight";
-};
-
 type CoverProps = {
   post: WritingPost;
-  position: number;
   compact?: boolean;
 };
 
@@ -22,13 +15,11 @@ function Arrow() {
   );
 }
 
-export function WritingCover({ post, position, compact = false }: CoverProps) {
-  const number = String(position + 1).padStart(2, "0");
-
+export function WritingCover({ post, compact = false }: CoverProps) {
   return (
     <div className={`${styles.cover} ${compact ? styles.coverCompact : ""}`} aria-hidden="true">
       <div className={styles.coverTop}>
-        <span>Field note / {number}</span>
+        <span>Part {String(post.part).padStart(2, "0")}</span>
         <span>{post.cover.label}</span>
       </div>
       <div className={styles.coverCore}>
@@ -48,26 +39,30 @@ export function WritingCover({ post, position, compact = false }: CoverProps) {
   );
 }
 
-export function WritingCard({ post, position, layout = "standard" }: Props) {
-  return (
-    <article className={`${styles.card} ${layout === "spotlight" ? styles.spotlight : ""}`}>
-      <Link className={styles.cardLink} href={post.href} aria-label={`Read ${post.title}`}>
-        <WritingCover post={post} position={position} />
+/** One part of a series. Upcoming parts are shown but not linked. */
+export function WritingPartCard({ post }: { post: WritingPost }) {
+  const published = post.status === "published";
+  const body = (
+    <>
+      <WritingCover post={post} compact />
+      <div className={styles.content}>
+        <p className={styles.meta}>{published ? post.readingTime : "Coming soon"}</p>
+        <h4>{post.title}</h4>
+        <p className={styles.hook}>{post.hook}</p>
+        {published && <span className={styles.readLink}>Read Part {post.part} <Arrow /></span>}
+      </div>
+    </>
+  );
 
-        <div className={styles.content}>
-          <div className={styles.meta}>
-            <span>{post.series}</span>
-            <time dateTime={post.datePublished}>{post.dateLabel}</time>
-            <span>{post.readingTime}</span>
-          </div>
-          <h3>{post.title}</h3>
-          <p className={styles.description}>{post.description}</p>
-          <ul className={styles.tags} aria-label="Topics">
-            {post.tags.map((tag) => <li key={tag}>{tag}</li>)}
-          </ul>
-          <span className={styles.readLink}>Read the essay <Arrow /></span>
-        </div>
-      </Link>
+  return (
+    <article className={`${styles.card} ${published ? "" : styles.upcoming}`}>
+      {published ? (
+        <Link className={styles.cardLink} href={post.href} aria-label={`Read Part ${post.part}: ${post.title}`}>
+          {body}
+        </Link>
+      ) : (
+        <div className={styles.cardLink}>{body}</div>
+      )}
     </article>
   );
 }
