@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
-import { SITE, SITE_YEAR } from "@/data/site";
+import { FEED_ALTERNATES, SITE, SITE_YEAR } from "@/data/site";
 import { getWritingPost } from "@/data/writing";
 import { PostFigures } from "./post-figures";
 import "./article.css";
@@ -23,7 +23,7 @@ function readArticle() {
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  alternates: { canonical: PATH },
+  alternates: { canonical: PATH, ...FEED_ALTERNATES },
   keywords: ["LLM GPU memory", "KV cache", "BF16", "quantization", "embedding table", "Qwen3-14B", "Afterimage"],
   openGraph: {
     title: TITLE,

@@ -22,11 +22,17 @@ npm run build
 npm run check:seo
 ```
 
-`npm run build` writes the static site to `out/`. Run `npm run check:seo` after it to verify the generated canonical URLs, internal page links, sitemap, robots file, and structured-data datetimes. The GitHub Pages workflow runs the same gate before publishing that directory and preserves the custom domain through `public/CNAME`.
+`npm run build` writes the static site to `out/`. Run `npm run check:seo` after it to verify the generated canonical URLs, internal links, redirect stubs, sitemap, robots file, RSS feed, and structured-data datetimes. The GitHub Pages workflow runs the same gate before publishing that directory and preserves the custom domain through `public/CNAME`.
+
+## Projects
+
+Each project card on the homepage links straight to its GitHub repository. The card text lives in `src/data/projects.ts`.
+
+The earlier `/work/<slug>/` case-study pages are retired. GitHub Pages cannot send HTTP redirects, so each of those addresses remains as a small stub that forwards to the matching card on the homepage (`/#project-<slug>`). Keep a project's `slug` unchanged so those links keep working.
 
 ## Search indexing
 
-The site emits canonical URLs, crawl directives, a root sitemap with image entries, profile and project structured data, descriptive social previews, and static HTML for every project case study.
+The site emits canonical URLs, crawl directives, a root sitemap with image entries, profile and article structured data, descriptive social previews, and an RSS feed for the writing at `/feed.xml`.
 
 After the first deployment:
 
@@ -35,10 +41,12 @@ After the first deployment:
 3. Inspect `https://oneyerge.com/` and request indexing after substantial releases.
 4. Set the repository Actions variable `GOOGLE_SITE_VERIFICATION` only if Search Console gives you an HTML-tag verification token. The workflow exposes it as `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` during the static build.
 
-Deployments also submit the canonical site and project URLs to IndexNow after GitHub Pages finishes. The public key is stored at the site root and the submission script is available as `npm run indexnow`.
+Deployments also submit the sitemap URLs to IndexNow after GitHub Pages finishes. The public key is stored at the site root and the submission script is available as `npm run indexnow`.
 
 ## Analytics
 
 The site includes a Google Analytics 4 integration that is disabled until a valid measurement ID is configured. Create a GA4 web data stream for `https://oneyerge.com`, then add its `G-...` measurement ID as the repository Actions variable `GOOGLE_ANALYTICS_ID`. The next deployment will include the Google tag. No placeholder ID or third-party analytics account is committed to the repository.
+
+GA4's enhanced measurement records a click on a project card as an outbound `click` event with the repository URL, so the site needs no extra tracking code for that. Emailed summaries are set up inside GA4 (Share, then Schedule email, on any report).
 
 Technical SEO makes the site crawlable and understandable. Search growth still depends on publishing useful, link-worthy pages and earning relevant references from GitHub, LinkedIn, talks, papers, and other sites.

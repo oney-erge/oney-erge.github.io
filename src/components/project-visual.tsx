@@ -3,16 +3,8 @@ import type { Project } from "@/data/projects";
 import styles from "@/app/page.module.css";
 import { LoopingVideo } from "@/components/looping-video";
 
-export function ProjectVisual({
-  project,
-  large = false,
-}: {
-  project: Project;
-  large?: boolean;
-}) {
-  const className = `${styles.projectVisual} ${large ? styles.detailVisual : ""} ${
-    large && project.visual === "segcraft" ? styles.wideDetailVisual : ""
-  }`;
+export function ProjectVisual({ project }: { project: Project }) {
+  const className = styles.projectVisual;
 
   if (project.visual === "ybm") {
     return (

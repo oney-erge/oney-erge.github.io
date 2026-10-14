@@ -5,7 +5,7 @@ import { HomepageSectionNav } from "@/components/homepage-section-nav";
 import { ProjectVisual } from "@/components/project-visual";
 import { WritingCard } from "@/components/writing-card";
 import { projects, type Project } from "@/data/projects";
-import { SITE_MODIFIED, SITE_YEAR } from "@/data/site";
+import { SITE_MODIFIED, SITE_PUBLISHED, SITE_YEAR } from "@/data/site";
 import { getFeaturedWritingPosts } from "@/data/writing";
 import styles from "./page.module.css";
 
@@ -13,45 +13,8 @@ const GITHUB = "https://github.com/oney-erge";
 const SCHOLAR = "https://scholar.google.com/citations?user=x0tT7L4AAAAJ";
 const LINKEDIN = "https://www.linkedin.com/in/oneyerge/";
 const PATENTS = "https://patents.justia.com/inventor/oney-erge";
-
-const projectCopy: Record<string, { outcome: string; detail: string; evidence: string }> = {
-  "ybm-local-ai-agent": {
-    outcome: "A policy-protected local agent that keeps working toward the task.",
-    detail:
-      "Talk to YBM from the web, Telegram, or WhatsApp. Tools pass through policy, approval, verification, and receipts. When a needed capability is missing, it can write and run the code required to continue.",
-    evidence: "Local-first · Self-extending workflows · Auditable tool use",
-  },
-  "afterimage-full-precision-llm-inference": {
-    outcome: "Run large, full-precision models on smaller GPUs.",
-    detail:
-      "Afterimage is a research toolbox for full-precision inference beyond VRAM. It ran a measured 29.5 GB Qwen3-14B BF16 model on an 8 GB GPU and compares compression, streaming, and speculative methods against named baselines. Its fastest tested mode reached 3.15x AirLLM and 1.56x HF Accelerate.",
-    evidence: "29.5 GB model · 8 GB GPU · Lossless weights",
-  },
-  "localdeploy-local-ai-models": {
-    outcome: "A complete local model deployment and benchmarking suite.",
-    detail:
-      "LocalDeploy inspects your hardware, estimates which models fit, lets you find and pull them from one UI, manages compatible runtimes, and measures the speed, quality, and memory use you actually get.",
-    evidence: "Hardware fit · Runtime control · Repeatable benchmarks",
-  },
-  "agentgymnasium-ai-agent-physics-sandbox": {
-    outcome: "Bring AI agents and physics into the same experiment.",
-    detail:
-      "AgentGymnasium gives an agent a simulated world, explicit tools, and physical challenges, then measures what it builds, what happens, and how its next attempt changes.",
-    evidence: "24 explicit tools · Explainable scores · Replayable trials",
-  },
-  "creature-lab-robot-morphology": {
-    outcome: "Design, evolve, and test robots in a reproducible physics lab.",
-    detail:
-      "Creature Lab lets you modify humanoids, quadrupeds, and other robot bodies, evolve morphology and control, diagnose failures, and package the complete experiment for another person to reproduce.",
-    evidence: "Humanoids and quadrupeds · Evolution · PyBullet",
-  },
-  "segcraft-semantic-segmentation": {
-    outcome: "Train, compare, and run semantic segmentation from one platform.",
-    detail:
-      "SegCraft includes ready-to-use presets and model backends for training, evaluation, and comparison, then carries the selected setup into image, uploaded video, and YouTube inference workflows.",
-    evidence: "Model presets · Comparative evaluation · Video workflows",
-  },
-};
+const ORCID = "https://orcid.org/0000-0002-2687-9135";
+const PYPI = "https://pypi.org/user/oney-erge/";
 
 type TimelineItem = {
   period: string;
@@ -208,56 +171,48 @@ const patents = [
     number: "US 10400570",
     title: "A physics-informed composite condition index with online trend forecasting",
     role: "Lead inventor",
-    topics: ["Physics-informed risk scoring", "Multivariate feature fusion", "Online trend detection"],
     href: "https://patents.google.com/patent/US10400570B2/en",
   },
   {
     number: "US 12473818",
     title: "Flow-regime transition control with real-time fluid-interface tracking",
     role: "Lead inventor",
-    topics: ["Physics-based simulation", "Constrained optimization", "Closed-loop control"],
     href: "https://patents.google.com/patent/US12473818B2/en",
   },
   {
     number: "US 11994017",
     title: "Axial fluid-interface estimation from pressure, rheology, and volume",
     role: "Lead inventor",
-    topics: ["Volumetric state estimation", "Change-point detection", "Multisensor fusion"],
     href: "https://patents.google.com/patent/US11994017B2/en",
   },
   {
     number: "US 10920584",
     title: "Uncertainty-bounded anomaly detection from flowback fingerprints",
     role: "Lead inventor",
-    topics: ["Gaussian process regression", "Uncertainty quantification", "Anomaly detection"],
     href: "https://patents.google.com/patent/US10920584B2/en",
   },
   {
     number: "US 12158555",
     title: "Probabilistic operation-sequence recognition from compressed time series",
     role: "Co-inventor",
-    topics: ["Symbolic Aggregate Approximation", "Hidden Markov models", "Viterbi inference"],
     href: "https://patents.google.com/patent/US12158555B2/en",
   },
   {
     number: "US 10900288",
     title: "Model-based axial excitation and closed-loop surface actuation",
     role: "Co-inventor",
-    topics: ["Frequency-response modeling", "Model-based control", "Optimal parameter selection"],
     href: "https://patents.google.com/patent/US10900288B2/en",
   },
   {
     number: "US 10648296",
     title: "Multisensor time-series recognition with decision-level fusion",
     role: "Co-inventor",
-    topics: ["Time-series classification", "Pattern recognition", "Sensor fusion"],
     href: "https://patents.google.com/patent/US10648296B2/en",
   },
   {
     number: "US 10316653",
     title: "Online multivariate response modeling and predictive operating envelopes",
     role: "Co-inventor",
-    topics: ["Online system identification", "Adaptive response modeling", "Multivariate optimization"],
     href: "https://patents.google.com/patent/US10316653B2/en",
   },
 ];
@@ -268,16 +223,28 @@ const profileSchema = {
   "@id": "https://oneyerge.com/#profile",
   url: "https://oneyerge.com/",
   name: "Oney Erge | Applied AI Researcher and Engineer",
+  dateCreated: SITE_PUBLISHED,
   dateModified: SITE_MODIFIED,
   mainEntity: {
     "@type": "Person",
     "@id": "https://oneyerge.com/#person",
     name: "Oney Erge",
+    honorificSuffix: "PhD",
+    description:
+      "Applied AI researcher and engineer working across agents, robotics, simulation, machine learning, and physical modeling.",
     url: "https://oneyerge.com/",
     image: "https://oneyerge.com/media/oney-erge-portrait.webp",
     jobTitle: "Applied AI Researcher and Engineer",
-    sameAs: [GITHUB, SCHOLAR, LINKEDIN, PATENTS],
+    worksFor: { "@type": "Organization", name: "Oxy", url: "https://www.oxy.com/" },
+    address: { "@type": "PostalAddress", addressLocality: "Houston", addressRegion: "TX", addressCountry: "US" },
+    sameAs: [GITHUB, SCHOLAR, LINKEDIN, ORCID, PATENTS, PYPI],
     alumniOf: educationSchools.map((school) => ({ "@type": "CollegeOrUniversity", name: school })),
+    hasCredential: {
+      "@type": "EducationalOccupationalCredential",
+      name: "PhD, Dynamic Systems and Control",
+      credentialCategory: "degree",
+      recognizedBy: { "@type": "CollegeOrUniversity", name: educationSchools[0] },
+    },
     knowsAbout: [
       "Agent systems",
       "Language models",
@@ -352,7 +319,6 @@ function JobLogo({ kind }: { kind: string }) {
 }
 
 function ProjectCard({ project }: { project: Project }) {
-  const copy = projectCopy[project.slug];
   return (
     <li id={`project-${project.slug}`}>
       <article className={styles.projectCard}>
@@ -361,16 +327,12 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
         <div className={styles.projectBody}>
           <p className={styles.projectField}>{project.field}</p>
-          <h3><a className={styles.projectCardLink} href={`/work/${project.slug}/`}>{project.name} <Arrow /></a></h3>
-          <p className={styles.projectOutcome}>{copy.outcome}</p>
-          <p className={styles.projectSummary}>{copy.detail}</p>
-          <p className={styles.projectEvidence}>{copy.evidence}</p>
-          <div className={styles.projectFooter}>
-            <ul aria-label={`${project.name} technologies`}>
-              {project.tags.slice(0, 3).map((tag) => <li key={tag}>{tag}</li>)}
-            </ul>
-            <a href={`${GITHUB}/${project.repo}`} target="_blank" rel="noreferrer">Source <Arrow /></a>
-          </div>
+          <h3><a className={styles.projectCardLink} href={`${GITHUB}/${project.repo}`} target="_blank" rel="noreferrer">{project.name} <Arrow /></a></h3>
+          <p className={styles.projectOutcome}>{project.outcome}</p>
+          <p className={styles.projectSummary}>{project.detail}</p>
+          <ul className={styles.projectTags} aria-label={`${project.name} technologies`}>
+            {project.tags.map((tag) => <li key={tag}>{tag}</li>)}
+          </ul>
         </div>
       </article>
     </li>
@@ -409,11 +371,6 @@ export default function Home() {
 
         <HomepageSectionNav className={styles.jumpNav} activeClassName={styles.activeNavLink} />
 
-        <section className={styles.now} aria-labelledby="now-heading">
-          <h2 id="now-heading">Now</h2>
-          <p>These are some of the projects I work on in public, from local agents and full-precision inference on small GPUs to simulation environments where agents learn from physical outcomes. I hope they are useful to you in one way or another.</p>
-        </section>
-
         <section className={`${styles.section} ${styles.writingSection}`} id="writing" aria-labelledby="writing-heading">
           <header className={styles.writingHeader}>
             <h2 id="writing-heading">Writing</h2>
@@ -434,7 +391,8 @@ export default function Home() {
 
         <section className={`${styles.section} ${styles.workBreakout}`} id="work" aria-labelledby="work-heading">
           <header className={styles.sectionHeader}>
-            <div><p>Projects</p><h2 id="work-heading">Selected work</h2></div>
+            <h2 id="work-heading">Projects</h2>
+            <p>These are some of the projects I work on in public, from local agents and full-precision inference on small GPUs to simulation environments where agents learn from physical outcomes. I hope they are useful to you in one way or another.</p>
           </header>
           <ol className={styles.projectGrid}>{projects.map((project) => <ProjectCard key={project.repo} project={project} />)}</ol>
           <a className={styles.textLink} href={GITHUB} target="_blank" rel="noreferrer">More on GitHub <Arrow /></a>
@@ -442,7 +400,7 @@ export default function Home() {
 
         <section className={styles.section} id="background" aria-labelledby="background-heading">
           <header className={styles.sectionHeader}>
-            <div><p>Timeline</p><h2 id="background-heading">Past work</h2></div>
+            <h2 id="background-heading">Experience</h2>
           </header>
           <ol className={styles.timeline}>
             {timeline.map((item) => (
@@ -473,7 +431,7 @@ export default function Home() {
 
         <section className={styles.section} id="research" aria-labelledby="research-heading">
           <header className={styles.sectionHeader}>
-            <div><p>Research</p><h2 id="research-heading">Papers and patents</h2></div>
+            <h2 id="research-heading">Research</h2>
           </header>
           <dl className={styles.researchStats}>
             <div><dt>800+</dt><dd>Citations</dd></div><div><dt>32+</dt><dd>Publications</dd></div><div><dt>15</dt><dd>h-index</dd></div><div><dt>8</dt><dd>US patents</dd></div>
@@ -491,16 +449,9 @@ export default function Home() {
               <div><h3>Patents</h3><p>Eight selected grants</p></div>
               <a href={PATENTS} target="_blank" rel="noreferrer">Patent profile <Arrow /></a>
             </div>
-            <ol className={styles.patentGrid}>
+            <ol className={`${styles.paperList} ${styles.patentList}`}>
               {patents.map((patent) => (
-                <li key={patent.number}>
-                  <a href={patent.href} target="_blank" rel="noreferrer">
-                    <div className={styles.patentMeta}><span>{patent.role}</span><p>{patent.number}</p></div>
-                    <strong>{patent.title}</strong>
-                    <ul>{patent.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul>
-                    <Arrow />
-                  </a>
-                </li>
+                <li key={patent.number}><a href={patent.href} target="_blank" rel="noreferrer"><span>{patent.number}</span><div><strong>{patent.title}</strong><p>{patent.role}</p></div><Arrow /></a></li>
               ))}
             </ol>
           </div>
@@ -508,7 +459,7 @@ export default function Home() {
 
         <section className={`${styles.section} ${styles.contact}`} id="contact" aria-labelledby="contact-heading">
           <header className={styles.sectionHeader}>
-            <div><p>Contact</p><h2 id="contact-heading">Say hello</h2></div>
+            <h2 id="contact-heading">Contact</h2>
             <div className={styles.contactCopy}><p>I am easiest to reach on LinkedIn. I am always glad to hear from people working on agents, local AI, simulation, or AI for physical systems.</p><a className={styles.textLink} href={LINKEDIN} target="_blank" rel="noreferrer">Connect on LinkedIn <Arrow /></a></div>
           </header>
         </section>

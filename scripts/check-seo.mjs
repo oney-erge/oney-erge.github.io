@@ -11,6 +11,10 @@ const SITE_HOSTNAMES = new Set([
 ]);
 const ISO_DATETIME =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))$/;
+const META_REFRESH =
+  /<meta\b[^>]*\bhttp-equiv="refresh"[^>]*\bcontent="([^"]+)"[^>]*>/i;
+/** A path ending in an extension is a file (feed.xml), not a page directory. */
+const FILE_PATH = /\.[a-z0-9]+$/i;
 const errors = [];
 
 function decodeHtml(value) {
@@ -126,7 +130,9 @@ function localOutputPath(url) {
     return null;
   }
 
-  return path.join(OUTPUT_DIR, ...segments, "index.html");
+  return FILE_PATH.test(pathname)
+    ? path.join(OUTPUT_DIR, ...segments)
+    : path.join(OUTPUT_DIR, ...segments, "index.html");
 }
 
 function parseInternalPageUrl(rawValue, sourceUrl) {
@@ -151,7 +157,11 @@ function parseInternalPageUrl(rawValue, sourceUrl) {
   if (url.search) {
     errors.push(`${sourceUrl}: internal page link must not contain a query string.`);
   }
-  if (url.pathname !== "/" && !url.pathname.endsWith("/")) {
+  if (
+    url.pathname !== "/" &&
+    !url.pathname.endsWith("/") &&
+    !FILE_PATH.test(url.pathname)
+  ) {
     errors.push(
       `${sourceUrl}: internal page link ${url.pathname} must include its trailing slash.`,
     );
@@ -160,6 +170,38 @@ function parseInternalPageUrl(rawValue, sourceUrl) {
   url.hash = "";
   url.search = "";
   return url;
+}
+
+/**
+ * GitHub Pages cannot send HTTP redirects, so a retired URL keeps a stub page
+ * whose instant meta refresh forwards to its replacement. A stub is exempt
+ * from the self-canonical rule: its canonical must name the redirect target.
+ * Returns the target URL, or null when the stub is malformed.
+ */
+function inspectRedirectStub(rawContent, sourceUrl, canonicals) {
+  const content = /^\s*(\d+)\s*;\s*url=(.+)$/i.exec(decodeHtml(rawContent));
+  if (!content) {
+    errors.push(`${sourceUrl}: meta refresh must have the form "0; url=<target>".`);
+    return null;
+  }
+  if (content[1] !== "0") {
+    errors.push(
+      `${sourceUrl}: redirect stub must refresh after 0 seconds to count as a permanent redirect.`,
+    );
+  }
+
+  const target = parseInternalPageUrl(content[2], sourceUrl);
+  if (!target) {
+    errors.push(`${sourceUrl}: redirect stub must point to a page on this site.`);
+    return null;
+  }
+  if (canonicals.length !== 1 || canonicals[0] !== target.href) {
+    errors.push(
+      `${sourceUrl}: redirect stub needs exactly one canonical link, pointing to ${target.href}.`,
+    );
+  }
+
+  return target.href;
 }
 
 try {
@@ -171,6 +213,7 @@ try {
 
 const htmlFiles = await listHtmlFiles(OUTPUT_DIR);
 const canonicalPages = new Map();
+const redirectStubs = new Map();
 let structuredDataDates = 0;
 
 for (const file of htmlFiles) {
@@ -183,6 +226,17 @@ for (const file of htmlFiles) {
   const canonicalMatches = [
     ...html.matchAll(/<link\b[^>]*\brel="canonical"[^>]*\bhref="([^"]+)"[^>]*>/gi),
   ];
+
+  const refresh = META_REFRESH.exec(html);
+  if (refresh) {
+    const target = inspectRedirectStub(
+      refresh[1],
+      expectedUrl,
+      canonicalMatches.map((match) => decodeHtml(match[1])),
+    );
+    if (target) redirectStubs.set(expectedUrl, target);
+    continue;
+  }
 
   if (canonicalMatches.length !== 1) {
     errors.push(
@@ -227,8 +281,16 @@ for (const file of htmlFiles) {
     try {
       await access(target);
     } catch {
-      errors.push(`${expectedUrl}: internal page link ${url.href} has no generated HTML.`);
+      errors.push(
+        `${expectedUrl}: internal link ${url.href} has no generated page or file.`,
+      );
     }
+  }
+}
+
+for (const [stub, target] of redirectStubs) {
+  if (!canonicalPages.has(target)) {
+    errors.push(`${stub}: redirect stub points to ${target}, which is not a canonical page.`);
   }
 }
 
@@ -302,6 +364,25 @@ if (robots === null) {
   }
 }
 
+const feedPath = path.join(OUTPUT_DIR, "feed.xml");
+const feed = await readFile(feedPath, "utf8").catch(() => null);
+let feedItems = 0;
+if (feed === null) {
+  errors.push("The static export is missing feed.xml.");
+} else {
+  for (const match of feed.matchAll(/<item>([\s\S]*?)<\/item>/gi)) {
+    const link = /<link>([^<]+)<\/link>/i.exec(match[1]);
+    const value = link ? decodeHtml(link[1].trim()) : null;
+    if (!value || !canonicalPages.has(value)) {
+      errors.push(
+        `feed.xml item does not link to a self-canonical page: ${value ?? "(no link)"}.`,
+      );
+    } else {
+      feedItems += 1;
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`SEO check failed with ${errors.length} issue(s):`);
   errors.forEach((error) => console.error(`- ${error}`));
@@ -310,6 +391,7 @@ if (errors.length > 0) {
 
 console.log(
   `SEO check passed: ${canonicalPages.size} self-canonical pages, ` +
-    `${sitemapUrls.size} sitemap URLs, ${structuredDataDates} structured-data dates, ` +
+    `${redirectStubs.size} redirect stubs, ${sitemapUrls.size} sitemap URLs, ` +
+    `${feedItems} feed items, ${structuredDataDates} structured-data dates, ` +
     `and ${sitemapLastModifiedDates} sitemap dates validated.`,
 );

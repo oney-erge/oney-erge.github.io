@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { WritingCover } from "@/components/writing-card";
-import { SITE, SITE_YEAR } from "@/data/site";
-import { writingPosts } from "@/data/writing";
+import { FEED_ALTERNATES, FEED_PATH, SITE, SITE_YEAR } from "@/data/site";
+import { WRITING_DESCRIPTION as DESCRIPTION, writingPosts } from "@/data/writing";
 import styles from "./page.module.css";
-
-const DESCRIPTION =
-  "Long-form technical writing by Oney Erge about language models, local AI, inference systems, agents, simulation, and the measurements behind the work.";
 
 export const metadata: Metadata = {
   title: "Writing",
   description: DESCRIPTION,
-  alternates: { canonical: "/writing/" },
+  alternates: { canonical: "/writing/", ...FEED_ALTERNATES },
   openGraph: {
     title: "Writing | Oney Erge",
     description: DESCRIPTION,
@@ -79,7 +76,7 @@ export default function WritingPage() {
         <section className={styles.archive} id="all-writing" aria-labelledby="all-writing-heading">
           <header className={styles.sectionHeader}>
             <h2 id="all-writing-heading">Essay index</h2>
-            <p>Newest first · {String(writingPosts.length).padStart(2, "0")} total</p>
+            <p>Newest first · {String(writingPosts.length).padStart(2, "0")} total · <a href={FEED_PATH}>RSS feed</a></p>
           </header>
           <ol className={styles.archiveList}>
             {writingPosts.map((post, index) => (
