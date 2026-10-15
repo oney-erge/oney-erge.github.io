@@ -1,16 +1,14 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Memory requirements of language model inference on a consumer GPU</h1>
-    <p class="deck">I run language models on a laptop GPU with 8&nbsp;GB of memory. The model this series uses, Qwen3-14B, needs 29.5&nbsp;GB for its released weights. This series follows how such a model can still run without changing those weights, and this first part calculates what has to fit in GPU memory.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>Updated October 14, 2026</span><span>8 min read</span></div>
+    <h1>Why a 14B model does not fit in 8&nbsp;GB</h1>
+    <p class="deck">Qwen3-14B needs 29.5&nbsp;GB for its released BF16 weights; my laptop GPU has 8&nbsp;GB. This note maps the memory budget and shows why the model can still run one part at a time without changing those weights.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>Updated October 14, 2026</span><span>7 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>A language model is, in large part, a collection of numbers called weights that are learned during training. Text is converted into lists of numbers and passed through a series of layers. Each layer transforms the list using its own weights, then hands the result to the next layer.</p>
-    <p>A GPU is fast at this work because it runs thousands of multiplications at the same time. That speed only helps if the weights arrive as fast as the GPU can use them. The GPU's own memory sits next to its processor on the graphics card and, on my GPU, can be read at about 448&nbsp;GB/s <a class="cite" href="#ref-3">[3]</a>. Data in the computer's main memory (RAM) or on the SSD must first travel over the PCIe connection, which carries at most about 32&nbsp;GB/s <a class="cite" href="#ref-3">[3]</a>, more than 10 times less. Storage is slower still. For this reason, the weights are normally loaded into GPU memory before inference, the process of using a trained model to generate text.</p>
-    <p>The practical problem is size.</p>
-    <p>Throughout this series, I use Qwen3-14B, the 14B model of the Qwen3 family that Alibaba's Qwen team released on April 29, 2025 <a class="cite" href="#ref-1">[1]</a>. Its released BF16 weights require about 29.5&nbsp;GB. My GPU, an NVIDIA RTX 3080 Laptop GPU, has 8&nbsp;GB of advertised memory.</p>
-    <p>There are two practical ways to deal with this mismatch. One is to make the weights smaller, normally through quantization. The other is to keep most of the weights outside GPU memory and load them only when they are needed.</p>
+    <p>Qwen3-14B is the 14B model of the Qwen3 family <a class="cite" href="#ref-1">[1]</a>. Its released BF16 weights need 29.5&nbsp;GB, while my NVIDIA RTX 3080 Laptop GPU has 8&nbsp;GB. Loading the whole model normally is impossible.</p>
+    <p>The weights normally sit in GPU memory because it is the only memory the GPU computes from at full speed. On my GPU it is read at about 448&nbsp;GB/s, while data in RAM or on the SSD must cross the PCIe connection at about 32&nbsp;GB/s at most <a class="cite" href="#ref-3">[3]</a>.</p>
+    <p>The two practical choices are to use smaller approximate weights, usually through quantization, or to keep most of the released weights outside the GPU and load each part when it is needed. This series studies the second choice.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-budget">
@@ -63,7 +61,7 @@
     <p>BF16 was designed to keep the range of FP32 in half the memory <a class="cite" href="#ref-2">[2]</a>. It is the released format for Qwen3-14B. With N = 14.8&nbsp;billion weights and b = 2&nbsp;bytes, Qwen3-14B needs 29.5&nbsp;GB.</p>
     <p>Quantization reduces this requirement. For Qwen3-14B, 8-bit weights need about 14.8&nbsp;GB and 4-bit weights need about 7.4&nbsp;GB, before the additional metadata used by practical quantization formats.</p>
     <p><strong>This series keeps BF16.</strong> In this series, exact weights means that inference ultimately uses the same BF16 values released with the model, not an 8-bit or 4-bit approximation. Afterimage <a class="cite" href="#ref-4">[4]</a>, the engine this series builds toward, is designed to run these exact weights: it does not introduce weight error through lossy quantization.</p>
-    <p>Where this series reports the same output tokens across methods, such as in Part 2, that is a separate measured result and not a guarantee that follows automatically from using exact weights.</p>
+    <p>Where this series reports the same output tokens across methods, such as in Guide&nbsp;2, that is a separate measured result and not a guarantee that follows automatically from using exact weights.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-parts">
@@ -181,14 +179,9 @@
   </div>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">Conclusions</h2>
-    <p>The GPU memory needed to hold the weights of Qwen3-14B was calculated from its configuration and compared with my 8&nbsp;GB laptop GPU. The following were concluded:</p>
-    <ol class="conclusions">
-      <li>GPU memory holds five main items: system use, GPU software, weights, the KV cache, and activations. On my laptop, the system alone used 2.2&nbsp;GB before any model was loaded, leaving about 6.4&nbsp;GB of physical capacity.</li>
-      <li>The released BF16 weights need 29.5&nbsp;GB, more than 3 times the GPU memory. Most of this is in 40 decoder layers of about 0.66&nbsp;GB each.</li>
-      <li>The model uses its weights in sequence, one part after another, so all 29.5&nbsp;GB do not have to be on the GPU at the same instant.</li>
-    </ol>
-    <p>The weights are not the only thing that has to fit. <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a> adds the memory that grows with the input prompt and the answer, the KV cache, and measures what happens when the model is run one part at a time.</p>
+    <h2 id="h-conc">The point</h2>
+    <p>The released BF16 model needs 29.5&nbsp;GB, mostly in its 40 decoder layers, before the KV cache and temporary working memory are counted. The GPU cannot hold it all, but the model uses its major weight groups in sequence, so it does not need them all at the same instant.</p>
+    <p><a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Next: the memory that grows with every token</a>, and a measured streamed run that keeps the GPU peak under 2&nbsp;GB.</p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

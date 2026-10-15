@@ -1,48 +1,45 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Schedule-aware exact weight placement for language models with limited GPU memory</h1>
-    <p class="deck">Parts 1 to 3 showed that loading weights one part at a time makes a large model fit, and that only some of that loading delays the answer. With a few gigabytes of spare GPU memory and RAM, the remaining choice is which weights to keep close to the GPU. This part summarizes my paper's answer, a method I call H6.5 (hypothesis 6, variant 5), which makes that choice by replaying a recorded request.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>8 min read</span><span>3 min video</span></div>
+    <h1>Which weights should stay near the GPU?</h1>
+    <p class="deck">H6.5 replays a recorded request to choose where each weight tensor should live: SSD, RAM, or GPU memory. In its main Llama-3.3-70B test, it lowered both peak GPU memory and request time against simpler rules, without changing the weights.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>6 min read</span><span>1 min video</span></div>
   </header>
 
   <div class="wide block">
     <figure class="video" aria-labelledby="video-cap">
-      <video controls preload="none" playsinline poster="/media/h65-explainer-3min-poster.jpg">
-        <source src="/media/h65-explainer-3min.mp4" type="video/mp4">
-        <a href="/media/h65-explainer-3min.mp4">Download the video (MP4, 16 MB)</a>
+      <video controls preload="metadata" playsinline poster="/media/h65-explainer-poster.jpg">
+        <source src="/media/h65-explainer-1min.mp4" type="video/mp4">
+        <a href="/media/h65-explainer-1min.mp4">Download the 1-minute video (MP4, 6 MB)</a>
       </video>
-      <figcaption id="video-cap"><b>Video.</b> The paper in 3 minutes, narrated, with captions. A <a href="/media/h65-explainer-1min.mp4">1-minute version</a> is also available.</figcaption>
+      <figcaption id="video-cap"><b>One-minute video.</b> A quick overview of the paper, narrated with captions. I used Claude Code to create it from the paper&apos;s content. A longer <a href="/media/h65-explainer-3min.mp4">3-minute version</a> is also available.</figcaption>
       <details class="transcript">
         <summary>Transcript</summary>
-        <p>Llama-3.3-70B needs about 141 GB for its weights. An RTX 5090 has 32 GB. So how do you run a model that does not fit on the GPU?</p>
-        <p>A PC keeps data in three places. The SSD is huge but slow, RAM is in between, and GPU memory is small, but it is where the GPU does its math. So a weight on the SSD travels to RAM, then over the PCIe link into GPU memory.</p>
-        <p>You could round the weights to fewer bits, but then it is no longer the exact model. Tools like Accelerate and AirLLM keep the exact weights off the GPU and stream them in, layer by layer. The good ones load the next layer while the GPU computes the current one.</p>
-        <p>But that trip is slow: compressed weights must be read, unpacked, then copied. In one real request, reading the 2.1 GB output head took 1.25 s, and unpacking it 0.31 s. When a layer arrives late, the GPU sits idle.</p>
-        <p>There is one lever: spare room, about 5 GB on the GPU and 16 GB in RAM. Weights kept there skip the trip. But there are 723 weight tensors, each with several places it could live. H6.5 decides where each one lives, within those budgets, so the request finishes as early as possible.</p>
-        <p>The usual rule keeps whatever saves the most data movement. But less data is not always less waiting. Scenario one: two layers of the same size. The blue one arrives while the GPU is still busy. The orange one arrives 2 s late. Keeping the blue one on the GPU saves nothing. Keeping the orange one saves 2 seconds.</p>
-        <p>Scenario two, from the real run: the output head is read only after the last layer, so the GPU waits 1.56 s at the end. A rule based on bytes leaves it on the SSD. With the head on the GPU, the same schedule ends 1.56 s sooner. And there are many more: change the model, the GPU, the budget or the answer length, and the best placement changes.</p>
-        <p>So H6.5 uses no fixed rule. It records one real request: every read, unpack, copy and computation. Then it replays that recording for each candidate placement, to predict the finish time. It scores about 1,800 placements in seconds, keeps the best, and freezes it for live requests.</p>
-        <p>On the RTX 5090, with the same budgets, it placed 198 of the 723 tensors differently, including the output head, now on the GPU. Over 20 matched requests, peak GPU memory fell 23%, in every one, and requests ran about 13% faster. On a laptop GPU with other models, it picked a different plan, and still cut peak GPU memory by 12 to 13%.</p>
-        <p>Don't spend scarce GPU memory on the weights that move the most data. Spend it on the weights that make the GPU wait.</p>
+        <p>Llama-3.3-70B needs 141 GB of weights. An RTX 5090 has 32 GB.</p>
+        <p>So the weights wait on the SSD and in RAM, and travel to the GPU, layer by layer.</p>
+        <p>That trip is slow: read, unpack, copy. When a layer arrives late, the GPU sits idle.</p>
+        <p>Spare GPU and RAM space can keep some weights close. H6.5 decides which of the 723 tensors get it.</p>
+        <p>Size is the wrong guide. Take two layers of the same size. Keeping the blue one on the GPU saves nothing. Keeping the orange one saves 2 seconds, because its trip made the GPU wait.</p>
+        <p>So H6.5 records one real request, replays it for about 1,800 placements, and keeps the fastest.</p>
+        <p>It placed 198 of 723 tensors differently: 23% less peak GPU memory, and about 13% faster.</p>
+        <p>Spend scarce GPU memory on the weights that make the GPU wait.</p>
       </details>
     </figure>
   </div>
 
   <div class="col prose">
-    <p>So far this series has used one model on one machine: Qwen3-14B on my 8&nbsp;GB laptop GPU. The paper's main experiment is larger. It runs Llama-3.3-70B, which needs about 141&nbsp;GB for its BF16 weights, on an NVIDIA RTX 5090 desktop GPU with 32&nbsp;GB of memory <a class="cite" href="#ref-1">[1]</a>. That GPU is large for a desktop, but it holds less than a quarter of this model's weights. The same method on my laptop appears in the results below, and the code and evidence are in Afterimage <a class="cite" href="#ref-2">[2]</a>.</p>
+    <p>The paper's main experiment runs Llama-3.3-70B, whose BF16 weights need about 141&nbsp;GB, on an NVIDIA RTX 5090 with 32&nbsp;GB of memory <a class="cite" href="#ref-1">[1]</a>. The same method also chose a different placement on my laptop; the code and evidence are in Afterimage <a class="cite" href="#ref-2">[2]</a>.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-decision">
     <h2 id="h-decision">The placement decision</h2>
-    <p>The paper's runtime keeps every weight tensor, one named array of weights such as one layer's attention matrix, in exactly one state: compressed on the SSD, uncompressed on the SSD, unpacked in RAM, or unpacked in GPU memory. The closer the state is to the GPU, the less preparation the tensor needs on every request (Part&nbsp;3), and the more of a scarce budget it occupies. The states chosen for all tensors together must fit one GPU budget and one RAM budget.</p>
-    <p>In the main experiment, the GPU budget is 8&nbsp;GB, of which about 5.2&nbsp;GB may hold weights and the rest stays free for temporary work while a request runs. The RAM budget is 16&nbsp;GB, and Llama-3.3-70B has 723 weight tensors. With several possible states for each of 723 tensors, there are far too many placements to try one by one.</p>
-    <p>The goal is the placement that lets a request finish as early as possible, without changing any weight.</p>
+    <p>Each weight tensor, a named array such as one layer&apos;s attention matrix, can be compressed or uncompressed on the SSD, unpacked in RAM, or unpacked in GPU memory. A nearer state needs less preparation each request (Guide&nbsp;3), but uses limited RAM or GPU memory.</p>
+    <p>In the main experiment, 5.2&nbsp;GB of the 8&nbsp;GB GPU budget may hold weights; the rest stays free for temporary work. The RAM budget is 16&nbsp;GB. Llama-3.3-70B has 723 tensors with several possible states each, too many placements to test live. H6.5 seeks the one that finishes the request soonest without changing any weight.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-payoff">
     <h2 id="h-payoff">Same size, different payoff</h2>
-    <p>The data-movement rule from Part&nbsp;3 fills the budget with the tensors that save the most data movement per byte of memory, and the paper uses it as the main point of comparison. Systems such as FlexGen <a class="cite" href="#ref-3">[3]</a> and Hugging Face Accelerate <a class="cite" href="#ref-4">[4]</a>, which also keep weights off the GPU, decide where they live from sizes, bandwidths, or fixed rules.</p>
-    <p>Part&nbsp;3 showed why a rule like this can miss: loading that overlaps with computation is hidden, and only loading that makes the GPU wait costs time. Figure 1 shows the simplest case.</p>
+    <p>The main comparison is the data-movement rule from Guide&nbsp;3: it fills memory with the tensors that save the most data movement per byte. Similar offloading systems use sizes, bandwidths, or fixed rules <a class="cite" href="#ref-3">[3]</a> <a class="cite" href="#ref-4">[4]</a>.</p>
+    <p>But moved data is not the same as lost time: loading that finishes while the GPU computes is hidden. Only a late load delays the answer. Figure&nbsp;1 shows the simplest case.</p>
   </section>
 
   <div class="wide block">
@@ -91,7 +88,7 @@
 
   <div class="col prose">
     <p>A rule based on bytes cannot tell these two layers apart, because they are the same size. In the real model the difference is just as concrete.</p>
-    <p>In one recorded request with the data-movement placement, the output head, the 2.1&nbsp;GB final layer that scores the next token (Part&nbsp;1), was stored compressed on the SSD. It was read only after the last decoder layer had finished, which took 1.25&nbsp;s, and then unpacked, which took another 0.31&nbsp;s. Nothing was left to compute in the meantime, so the GPU waited <strong>1.56&nbsp;s</strong> (Figure 2).</p>
+    <p>In one recorded request with the data-movement placement, the output head, the 2.1&nbsp;GB final layer that scores the next token (Guide&nbsp;1), was stored compressed on the SSD. It was read only after the last decoder layer had finished, which took 1.25&nbsp;s, and then unpacked, which took another 0.31&nbsp;s. Nothing was left to compute in the meantime, so the GPU waited <strong>1.56&nbsp;s</strong> (Figure 2).</p>
   </div>
 
   <div class="wide block">
@@ -180,20 +177,14 @@
   <section class="col prose" aria-labelledby="h-limits">
     <h2 id="h-limits">Limits</h2>
     <p>These are results on two machines, with one-token requests as the main workload.</p>
-    <p>In an exploratory 32-token test with Qwen3-14B, the placement chosen for one-token requests was slower than loading everything from the SSD. The cause was RAM, not the GPU. That placement kept 8&nbsp;GB of weights in RAM, which left less room for the page cache from Part&nbsp;3, and the replay does not model the page cache. With no weights kept in RAM, H6.5 was the fastest method in a follow-up on new prompts.</p>
+    <p>In an exploratory 32-token test with Qwen3-14B, the placement chosen for one-token requests was slower than loading everything from the SSD. The cause was RAM, not the GPU. That placement kept 8&nbsp;GB of weights in RAM, which left less room for the page cache from Guide&nbsp;3, and the replay does not model the page cache. With no weights kept in RAM, H6.5 was the fastest method in a follow-up on new prompts.</p>
     <p>The replay predicts. Only live measurements, like those in Table 1, count as results.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">Conclusions</h2>
-    <p>H6.5 was applied to Llama-3.3-70B on an RTX 5090 and to two smaller models on my laptop, and its frozen placements were compared with simpler rules in live requests. The following were concluded:</p>
-    <ol class="conclusions">
-      <li>Which weights deserve the spare memory depends on when their loading delays the request, not on their size or on how much data they move.</li>
-      <li>H6.5 records one real request as a dependency graph, replays it for each candidate placement, and keeps the placement with the earliest predicted finish. For Llama-3.3-70B, it scored 1,817 placements in about 3.4&nbsp;seconds.</li>
-      <li>With the same budgets, it placed 198 of 723 tensors differently from the data-movement rule. Peak extra GPU memory was 23% lower in all 20 matched requests, and request time was 13% lower overall, with every weight unchanged.</li>
-      <li>On a laptop GPU with smaller models, it chose a different plan and used 12 to 13% less peak GPU memory.</li>
-    </ol>
-    <p>Each pass through a streamed model is slow, and this series has been about making each pass shorter. The next series turns to the other lever, <a href="/writing/speculative-decoding-streamed-inference/">speculative decoding</a>, which lets one slow pass produce more than one token.</p>
+    <h2 id="h-conc">The point</h2>
+    <p>What belongs in scarce memory depends on when loading it delays the request, not only on its size or byte traffic. H6.5 records one request, replays 1,817 feasible placements in about 3.4&nbsp;s, then freezes the placement for live requests.</p>
+    <p>Against the data-movement rule with the same budgets, the chosen Llama placement changed 198 of 723 tensors, used 23% less peak extra GPU memory in all 20 matched requests, and lowered request time 13% overall. <a href="/writing/speculative-decoding-streamed-inference/">Next: use one slow pass to generate several tokens.</a></p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

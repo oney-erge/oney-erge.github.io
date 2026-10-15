@@ -1,19 +1,18 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Variants of speculative decoding</h1>
-    <p class="deck"><a href="/writing/speculative-decoding-streamed-inference/">Part 1</a> used the simplest form of speculative decoding: a separate small model drafts a fixed number of tokens, and the large model checks them in one pass. Most variants change one of three choices: where the draft comes from, how many tokens to draft, and whether to check one guess or several. This part gives an overview, with my measurements for two of them.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>6 min read</span></div>
+    <h1>Three ways to improve speculative decoding</h1>
+    <p class="deck">Every speculative decoder makes three choices: where the draft comes from, how long it is, and whether the large model checks one guess or a tree. This note compares those choices and reports two small tests on the same laptop.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>5 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>Every variant keeps the final step of Part&nbsp;1: the large model, the target model, checks the draft and keeps only the tokens it agrees with. With greedy decoding, the output is therefore the target model's own output in every variant. What changes is how the draft is made, and so how often it is right and what it costs.</p>
-    <p>The sections below take the three choices in order.</p>
+    <p>Every variant still lets the large model check the draft and keep only the tokens it agrees with. With greedy decoding, the output stays the target model's own output; the practical differences are speed, memory, and training cost.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-source">
     <h2 id="h-source">Where the draft comes from</h2>
     <h3>A separate draft model</h3>
-    <p>A separate small model is the original form <a class="cite" href="#ref-1">[1]</a>. It needs no training, but it must share the target model's tokenizer, and it takes memory: about 1.3&nbsp;GB of GPU memory on my laptop (Part&nbsp;1).</p>
+    <p>A separate small model is the original form <a class="cite" href="#ref-1">[1]</a>. It needs no training, but it must share the target model's tokenizer, and it takes memory: about 1.3&nbsp;GB of GPU memory on my laptop (Speed note&nbsp;1).</p>
 
     <h3>The target model's own layers</h3>
     <p><strong>Self-speculation</strong> drafts with the target model itself, using only some of its layers, so no second model is stored. Draft &amp; Verify skips selected middle layers while drafting and needs no training. LayerSkip trains the model so that its early layers can already predict the next token, then drafts from those layers <a class="cite" href="#ref-2">[2]</a>.</p>
@@ -29,12 +28,12 @@
   <section class="col prose" aria-labelledby="h-length">
     <h2 id="h-length">How many tokens to draft</h2>
     <p>Fixed speculation drafts the same 8 tokens in every round. When the draft goes wrong early, the rest of it is wasted. Adaptive methods stop drafting when the next draft token is likely to be rejected: SpecDec++ trains a small head that predicts the chance of a rejection, and DISCO uses a small classifier <a class="cite" href="#ref-5">[5]</a>. Both report modest gains over a fixed length, about 7 to 10%.</p>
-    <p>In streamed inference, the trade-off is lopsided. Eq. (2) of Part&nbsp;1 shows why: a wasted draft token costs tens of milliseconds, while one pass of the target model costs about 20 seconds. Stopping early saves little, and stopping too early gives up tokens that the pass could have checked almost for free.</p>
+    <p>In streamed inference, the trade-off is lopsided. Eq. (2) of Speed note&nbsp;1 shows why: a wasted draft token costs tens of milliseconds, while one pass of the target model costs about 20 seconds. Stopping early saves little, and stopping too early gives up tokens that the pass could have checked almost for free.</p>
     <p>My measurements agree. I tested three adaptive policies on Qwen3-14B against a fixed draft length <a class="cite" href="#ref-8">[8]</a>:</p>
     <ol class="procedure">
       <li><span>Policy 1</span><span class="stepbody">A learning policy that adjusts k after each round cut k to 1 after a few rejections and was slower than the fixed draft: 7.7 against 7.2&nbsp;s per token, on one prompt with 16 sampled tokens.</span></li>
       <li><span>Policy 2</span><span class="stepbody">A threshold policy tied with the fixed draft, within the run-to-run noise of the same test.</span></li>
-      <li><span>Policy 3</span><span class="stepbody">A stopping policy that weighs the chance of rejection against the cost of drafting was slower on the four prompts of Part&nbsp;1: 9.8 against 9.2&nbsp;s per token.</span></li>
+      <li><span>Policy 3</span><span class="stepbody">A stopping policy that weighs the chance of rejection against the cost of drafting was slower on the four prompts of Speed note&nbsp;1: 9.8 against 9.2&nbsp;s per token.</span></li>
     </ol>
     <p>For a model streamed through a small GPU, a long fixed draft is close to the best choice. Adaptive length matters more when the target model fits on the GPU and a pass is fast.</p>
   </section>
@@ -112,16 +111,9 @@
   </div>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">Conclusions</h2>
-    <p>The main variants of speculative decoding were compared by where the draft comes from, how many tokens are drafted, and whether one chain or a tree is checked, and two of the choices were measured on my laptop. The following were concluded:</p>
-    <ol class="conclusions">
-      <li>Every variant keeps the target model's check, so the variants differ in speed and cost, not in the output, apart from relaxed acceptance rules such as Medusa's.</li>
-      <li>In a short test, drafting from the target model's own early layers did not work without training: the target model accepted none of the draft tokens from the first 4 or 8 layers of Qwen3-14B.</li>
-      <li>Adaptive draft length did not beat a fixed 8-token draft in my measurements, because in streamed inference a wasted draft token costs little next to one pass.</li>
-      <li>Tree drafts, which I have not measured yet, suit streamed inference, because one pass can check many tokens for about the cost of one; SpecExec reports up to 20 accepted tokens per pass.</li>
-    </ol>
-    <p>Therefore, for a large model streamed through a small GPU, the simplest form, a separate draft model with a long fixed draft, was the best of the options I tested, and tree drafts are the next variant to test.</p>
-    <p>Later parts of this series will build a small speculative decoder step by step and measure its acceptance rate on the same laptop.</p>
+    <h2 id="h-conc">The point</h2>
+    <p>For this streamed Qwen3-14B workload, the simplest option I tested, a separate draft model with a fixed 8-token draft, remained the best choice. Untrained self-speculation accepted none of the tested drafts, and the adaptive-length policies did not beat the fixed draft.</p>
+    <p>Tree drafts are the next option worth testing because one expensive pass can check many alternatives. I have not measured them yet; the tree result here is an explanation and literature context, not a result from this laptop.</p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

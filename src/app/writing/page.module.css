@@ -71,22 +71,22 @@
 }
 
 .hero {
-  display: flex;
-  gap: 2rem;
-  align-items: end;
-  justify-content: space-between;
-  padding: clamp(3.5rem, 7vw, 5.2rem) 0 2.2rem;
+  max-width: 50rem;
+  padding: clamp(3.5rem, 7vw, 5.2rem) 0 clamp(2.6rem, 5vw, 3.8rem);
   border-bottom: 1px solid var(--line);
 }
 
 .hero h1 {
-  font-size: clamp(3.5rem, 7vw, 5.5rem);
+  max-width: 44rem;
+  margin-top: 0.55rem;
+  font-size: clamp(3rem, 6.2vw, 4.7rem);
   font-weight: 640;
-  line-height: 0.95;
+  line-height: 0.98;
   letter-spacing: -0.07em;
 }
 
-.hero > p {
+.eyebrow,
+.sectionHeader > p {
   color: var(--muted);
   font-size: 0.74rem;
   font-weight: 650;
@@ -94,11 +94,13 @@
   text-transform: uppercase;
 }
 
-.hero > p strong {
-  margin-right: 0.35rem;
-  color: var(--ink);
-  font-size: 1.15rem;
-  letter-spacing: -0.03em;
+.heroIntro {
+  max-width: 40rem;
+  margin-top: 1.1rem;
+  color: var(--muted);
+  font-size: clamp(1.05rem, 1rem + 0.3vw, 1.25rem);
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .archive {
@@ -126,16 +128,6 @@
 
 .sectionHeader > p {
   color: var(--faint);
-  font-size: 0.74rem;
-  font-weight: 680;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.sectionHeader > p a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 .seriesDescription {
@@ -182,19 +174,6 @@
   line-height: 1;
 }
 
-.archiveMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  align-items: center;
-  color: var(--faint);
-  font-size: 0.7rem;
-  font-weight: 670;
-  letter-spacing: 0.055em;
-  line-height: 1.4;
-  text-transform: uppercase;
-}
-
 .archiveCopy {
   grid-column: 2;
   grid-row: 1;
@@ -202,7 +181,6 @@
 
 .archiveCopy h3 {
   max-width: 38rem;
-  margin-top: 0.45rem;
   font-size: clamp(1.3rem, 2vw, 1.6rem);
   font-weight: 640;
   line-height: 1.15;
@@ -210,10 +188,19 @@
   text-wrap: balance;
 }
 
+.archiveMeta {
+  margin-top: 0.55rem;
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 670;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
 .archiveDescription {
   display: -webkit-box;
   max-width: 39rem;
-  margin-top: 0.8rem;
+  margin-top: 0.55rem;
   overflow: hidden;
   color: var(--muted);
   font-size: 0.92rem;
@@ -280,12 +267,7 @@
 }
 
 @media (max-width: 580px) {
-  .header nav a {
-    padding-inline: 0.58rem;
-    font-size: 0.78rem;
-  }
-
-  .header nav a:nth-child(3) {
+  .header nav a:not(:first-child) {
     display: none;
   }
 
@@ -293,7 +275,6 @@
     font-size: clamp(3rem, 16vw, 4.2rem);
   }
 
-  .hero,
   .sectionHeader {
     flex-direction: column;
     gap: 0.65rem;
@@ -315,7 +296,7 @@
   }
 
   .archiveCopy h3 {
-    font-size: clamp(1.4rem, 7vw, 1.85rem);
+    font-size: clamp(1.25rem, 6.5vw, 1.6rem);
   }
 
   .archiveDescription {

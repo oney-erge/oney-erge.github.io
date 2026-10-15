@@ -381,7 +381,7 @@ export default function Home() {
         <section className={styles.section} id="writing" aria-labelledby="writing-heading">
           <header className={styles.sectionHeader}>
             <h2 id="writing-heading">Writing</h2>
-            <p>Technical series on running large language models with limited GPU memory, built on my own measurements.</p>
+            <p>I run models that are too large for a small GPU, then measure what makes them fit and what makes them faster.</p>
           </header>
           <div className={styles.writingColumns}>
             {writingSeries.map((series) => (

@@ -69,8 +69,9 @@ export default function WritingPage() {
 
       <main className={styles.page}>
         <header className={styles.hero}>
-          <h1>Writing</h1>
-          <p><strong>{String(writingPosts.length).padStart(2, "0")}</strong> published {writingPosts.length === 1 ? "essay" : "essays"}</p>
+          <p className={styles.eyebrow}>Writing about local LLM inference</p>
+          <h1>Run a large model on a small GPU.</h1>
+          <p className={styles.heroIntro}>I use released, exact weights and my own measurements to show what prevents a model from fitting, what makes streaming slow, and what improves it.</p>
         </header>
 
         <div id="all-writing">
@@ -82,21 +83,18 @@ export default function WritingPage() {
               <section className={styles.archive} id={`series-${series.id}`} key={series.id} aria-labelledby={headingId}>
                 <header className={styles.sectionHeader}>
                   <h2 id={headingId}>{series.title}</h2>
-                  <p>Series · {String(parts.length).padStart(2, "0")} parts · <a href={FEED_PATH}>RSS feed</a></p>
+                  <p>{parts.length} focused {parts.length === 1 ? "note" : "notes"}</p>
                 </header>
                 <p className={styles.seriesDescription}>{series.description}</p>
                 <ol className={styles.archiveList}>
                   {parts.map((post) => (
                     <li key={post.slug}>
-                      <Link href={post.href} aria-label={`Read Part ${post.part}: ${post.title}`}>
+                      <Link href={post.href} aria-label={`Read ${series.itemLabel.toLowerCase()} ${post.part}: ${post.title}`}>
                         <span className={styles.archiveNumber}>{String(post.part).padStart(2, "0")}</span>
                         <div className={styles.archiveCopy}>
-                          <div className={styles.archiveMeta}>
-                            <time dateTime={post.datePublished}>{post.dateLabel}</time>
-                            <span>{post.readingTime}</span>
-                          </div>
                           <h3>{post.title}</h3>
-                          <p className={styles.archiveDescription}>{post.description}</p>
+                          <p className={styles.archiveDescription}>{post.hook}</p>
+                          <p className={styles.archiveMeta}>{post.readingTime}</p>
                         </div>
                         <span className={styles.archiveArrow} aria-hidden="true">
                           <svg viewBox="0 0 16 16"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" /></svg>
@@ -114,7 +112,7 @@ export default function WritingPage() {
       <footer className={styles.footer}>
         <Link className={styles.brand} href="/">Oney Erge</Link>
         <p>Applied AI and physics, research and engineering.</p>
-        <p>© {SITE_YEAR} Oney Erge</p>
+        <p><a href={FEED_PATH}>RSS</a> · © {SITE_YEAR} Oney Erge</p>
       </footer>
     </>
   );

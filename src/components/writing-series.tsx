@@ -16,7 +16,7 @@ export function WritingSeriesList({ series, parts }: { series: WritingSeries; pa
 
   return (
     <div className={styles.series}>
-      <p className={styles.kicker}>Series · {parts.length} parts</p>
+      <p className={styles.kicker}>{series.collectionLabel}</p>
       <h3 id={headingId}>{series.title}</h3>
       <ol className={styles.parts} aria-labelledby={headingId}>
         {parts.map((post) => {

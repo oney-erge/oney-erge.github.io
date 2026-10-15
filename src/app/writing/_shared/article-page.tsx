@@ -43,18 +43,20 @@ export function articleMetadata(slug: string, keywords: string[]): Metadata {
 }
 
 function PartLink({ post, current }: { post: WritingPost; current: boolean }) {
-  const label = `Part ${post.part}`;
-  if (current) return <span className={styles.partCurrent} aria-current="page">{label}</span>;
-  if (post.status !== "published") return <span className={styles.partUpcoming} title="Coming soon">{label}</span>;
-  return <a className={styles.partLink} href={post.href} title={post.title}>{label}</a>;
+  const label = String(post.part);
+  const accessibleLabel = `${getSeries(post.seriesId).itemLabel} ${post.part}: ${post.title}`;
+  if (current) return <span className={styles.partCurrent} aria-current="page" aria-label={accessibleLabel}>{label}</span>;
+  if (post.status !== "published") return <span className={styles.partUpcoming} title="Coming soon" aria-label={accessibleLabel}>{label}</span>;
+  return <a className={styles.partLink} href={post.href} title={post.title} aria-label={accessibleLabel}>{label}</a>;
 }
 
 function SeriesBar({ post }: { post: WritingPost }) {
   const series = getSeries(post.seriesId);
   const parts = getSeriesParts(post.seriesId);
+  const collection = series.collectionLabel;
   return (
     <nav className={styles.seriesBar} aria-label={`${series.title}, part ${post.part} of ${parts.length}`}>
-      <span className={styles.seriesName}>Part {post.part} of {parts.length} · {series.title}</span>
+      <span className={styles.seriesName}>{collection} · {post.part} of {parts.length}</span>
       <span className={styles.seriesParts}>
         {parts.map((part) => <PartLink key={part.slug} post={part} current={part.slug === post.slug} />)}
       </span>
@@ -67,16 +69,17 @@ function SeriesFooter({ post }: { post: WritingPost }) {
   const index = parts.findIndex((part) => part.slug === post.slug);
   const previous = index > 0 ? parts[index - 1] : undefined;
   const next = index < parts.length - 1 ? parts[index + 1] : undefined;
+  const collection = getSeries(post.seriesId).itemLabel;
   const card = (target: WritingPost, direction: "Previous" | "Next") =>
     target.status === "published" ? (
       <a className={styles.seriesCard} href={target.href} data-direction={direction.toLowerCase()}>
-        <span>{direction} · Part {target.part}</span>
+        <span>{direction} · {collection} {target.part}</span>
         <strong>{target.title}</strong>
         <small>{target.hook}</small>
       </a>
     ) : (
       <div className={`${styles.seriesCard} ${styles.seriesCardUpcoming}`} data-direction={direction.toLowerCase()}>
-        <span>{direction} · Part {target.part} · coming soon</span>
+        <span>{direction} · {collection} {target.part} · coming soon</span>
         <strong>{target.title}</strong>
         <small>{target.hook}</small>
       </div>

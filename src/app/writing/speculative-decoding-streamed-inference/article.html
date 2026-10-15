@@ -1,15 +1,13 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Speculative decoding for streamed language model inference</h1>
-    <p class="deck">In my <a href="/writing/llm-memory-requirements-consumer-gpu/">previous series</a>, Qwen3-14B ran on my 8&nbsp;GB laptop GPU by loading its weights one part at a time, but every generated token cost one full pass through the model. Speculative decoding lets one pass produce several tokens without changing the output. This part explains how it works and measures it on the same laptop.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>8 min read</span></div>
+    <h1>How one slow pass can generate several tokens</h1>
+    <p class="deck">A small draft model can guess a few tokens ahead, cheaply. One slow pass of the large model then checks them all at once. On my 8&nbsp;GB laptop, this reduced Qwen3-14B from 17 to 9.2&nbsp;s per generated token at a similar GPU peak.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>LLMs generate text one token at a time. Each new token depends on the tokens before it, so the model has to finish one token before it can start the next (<a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a> of the previous series).</p>
-    <p>On a GPU that holds the whole model, one pass takes a fraction of a second. When the weights do not fit, each pass reads most of the model from storage again. On my laptop, each generated token of Qwen3-14B took 14 to 33 seconds, and reading the weights from the SSD alone takes about 13 seconds per pass (<a href="/writing/moving-weights-storage-to-gpu/">Part 3</a>).</p>
-    <p>The arithmetic for a few extra tokens is small next to that cost. Prompt prefill already shows this: one pass processes every token of the input prompt together. If the next few tokens of the answer were known in advance, one pass could check all of them.</p>
-    <p><strong>Speculative decoding</strong> makes that guess with a much smaller model and lets the large model check it <a class="cite" href="#ref-1">[1]</a>. The idea of predicting several tokens and keeping the ones the model confirms goes back to blockwise parallel decoding <a class="cite" href="#ref-2">[2]</a>.</p>
+    <p>A streamed large model normally needs one full pass for each answer token. On this laptop, that pass takes about 20&nbsp;seconds because most of the model must be read again from storage.</p>
+    <p><strong>Speculative decoding</strong> lets a much smaller model guess ahead, then lets the large model check those guesses in one pass <a class="cite" href="#ref-1">[1]</a>. The large model still decides which tokens are kept. The idea of predicting several tokens and keeping the ones the model confirms goes back to blockwise parallel decoding <a class="cite" href="#ref-2">[2]</a>.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-draft">
@@ -81,7 +79,7 @@
     </div>
     <p class="where">where t<sub>pass</sub> is the time of one pass of the target model with the draft tokens included, and t<sub>draft</sub> is the time the draft model needs for one token.</p>
     <p>In streamed inference, t<sub>pass</sub> is about 20 seconds and t<sub>draft</sub> is tens of milliseconds <a class="cite" href="#ref-5">[5]</a>. Drafting is almost free, so the time per token falls nearly in proportion to E. On a GPU that holds the whole model, a pass is fast, and drafting and checking take a larger share of it; there, the original papers report about 2 to 3 times faster generation <a class="cite" href="#ref-1">[1]</a>.</p>
-    <p>SpecExec was designed for the streamed case. For models offloaded to RAM, it checks large trees of draft tokens in one pass and reports up to 20 accepted tokens per pass <a class="cite" href="#ref-3">[3]</a>. Part&nbsp;2 returns to trees.</p>
+    <p>SpecExec was designed for the streamed case. For models offloaded to RAM, it checks large trees of draft tokens in one pass and reports up to 20 accepted tokens per pass <a class="cite" href="#ref-3">[3]</a>. Speed note&nbsp;2 returns to trees.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-measured">
@@ -136,28 +134,21 @@
 
   <div class="col prose">
     <p>Two prompts finished in a single pass, because the draft model guessed every token that was needed. The code prompt needed 3 passes, because the draft model disagreed with the target model more often.</p>
-    <p>Averaged over the four prompts, fixed speculation took <strong>9.2&nbsp;s per generated token</strong> at a 3.8&nbsp;GB peak. Without speculation, Afterimage's 4&nbsp;GB plan from Part&nbsp;3 took 17&nbsp;s per token at 3.9&nbsp;GB. Every prompt produced the same output tokens as the run without speculation.</p>
+    <p>Averaged over the four prompts, fixed speculation took <strong>9.2&nbsp;s per generated token</strong> at a 3.8&nbsp;GB peak. Without speculation, Afterimage's 4&nbsp;GB plan from Guide&nbsp;3 took 17&nbsp;s per token at 3.9&nbsp;GB. Every prompt produced the same output tokens as the run without speculation.</p>
     <p>Longer answers spread the prompt prefill over more tokens. In a later run with 8 generated tokens per prompt, fixed speculation averaged about 4.6&nbsp;s per token <a class="cite" href="#ref-5">[5]</a>.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-cost">
     <h2 id="h-cost">The cost of the draft model</h2>
     <p>The draft model keeps about 1.3&nbsp;GB of GPU memory for the whole run. The target model can no longer use that memory for its own weights, so each of its passes is slower than in the 4&nbsp;GB plan without speculation.</p>
-    <p>The draft model also sets a floor. Together with the target model's own minimum, speculation needs about 3&nbsp;GB, so it cannot run at the 1.6&nbsp;GB that AirLLM needed in Part&nbsp;2 of the previous series <a class="cite" href="#ref-5">[5]</a>.</p>
+    <p>The draft model also sets a floor. Together with the target model's own minimum, speculation needs about 3&nbsp;GB, so it cannot run at the 1.6&nbsp;GB that AirLLM needed in Guide&nbsp;2 <a class="cite" href="#ref-5">[5]</a>.</p>
     <p>The gain depends on the prompt, as Table 2 shows, and these answers are short. Each round also drafts 8 tokens whether the draft is going well or not.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">Conclusions</h2>
-    <p>Speculative decoding was explained with a simple example, its expected tokens per pass were calculated, and fixed speculation was measured on Qwen3-14B streamed through my 8&nbsp;GB laptop GPU. The following were concluded:</p>
-    <ol class="conclusions">
-      <li>A small draft model proposes several tokens, and the large model checks all of them in one pass. Every kept token is the large model's own choice, so with greedy decoding the output is the large model's own output.</li>
-      <li>Each pass produces between 1 and k&nbsp;+&nbsp;1 tokens. The expected number grows with the acceptance rate, and long drafts pay off only when the draft is usually right.</li>
-      <li>In streamed inference, one pass takes about 20 seconds while one draft token takes tens of milliseconds, so almost every accepted draft token is time saved.</li>
-      <li>On my laptop, fixed speculation with 8-token drafts took 9.2&nbsp;s per generated token at a 3.8&nbsp;GB peak, against 17&nbsp;s at 3.9&nbsp;GB without speculation, with the same output tokens.</li>
-    </ol>
-    <p>Therefore, at about 4&nbsp;GB of GPU memory, giving 1.3&nbsp;GB of it to a draft model saved more time in these measurements than keeping more of the large model's weights on the GPU.</p>
-    <p>The draft in this part always came from a separate model and always had 8 tokens. <a href="/writing/speculative-decoding-variants/">Part&nbsp;2</a> looks at the main variants: where else the draft can come from, how many tokens to draft, and whether to check one guess or a tree of guesses.</p>
+    <h2 id="h-conc">The point</h2>
+    <p>The draft model changes how many slow passes are needed, not which token the large model chooses under greedy decoding. In this streamed workload, a draft token took milliseconds while a target-model pass took about 20&nbsp;s, so accepted guesses saved substantial time.</p>
+    <p>With fixed 8-token drafts, the measured run took 9.2&nbsp;s per generated token at a 3.8&nbsp;GB peak, against 17&nbsp;s at 3.9&nbsp;GB without speculation. <a href="/writing/speculative-decoding-variants/">Next: three choices that change the trade-off.</a></p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

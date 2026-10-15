@@ -66,6 +66,8 @@
 }
 
 .main {
+  box-sizing: border-box;
+  width: 100%;
   padding-inline: 1.5rem;
 }
 
@@ -102,6 +104,7 @@
 }
 
 .seriesName {
+  min-width: 0;
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 650;
@@ -231,7 +234,15 @@ a.seriesCard:hover {
 }
 
 @media (max-width: 520px) {
-  .header nav a:nth-child(2) {
+  .header nav a:not(:first-child) {
     display: none;
+  }
+
+  .seriesBar {
+    align-items: flex-start;
+  }
+
+  .seriesParts {
+    width: 100%;
   }
 }

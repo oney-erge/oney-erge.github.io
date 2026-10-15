@@ -1,14 +1,13 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>KV cache memory and streamed inference on a consumer GPU</h1>
-    <p class="deck">In <a href="/writing/llm-memory-requirements-consumer-gpu/">Part 1</a>, the released weights of Qwen3-14B needed 29.5&nbsp;GB, more than 3 times the memory of my 8&nbsp;GB laptop GPU. The input prompt and the answer need GPU memory too, and that memory grows with every token. This part calculates that memory, called the KV cache, and then measures what happens when the weights are loaded one part at a time.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>9 min read</span></div>
+    <h1>The memory that grows with every token</h1>
+    <p class="deck">The KV cache stores information for every prompt and answer token, so its memory grows throughout a request. This note calculates that cost for Qwen3-14B and measures streamed execution when the full 29.5&nbsp;GB model cannot fit on an 8&nbsp;GB GPU.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
   </header>
 
   <section class="col prose" aria-labelledby="h-kv">
-    <h2 id="h-kv">Memory for the prompt and the answer: the KV cache</h2>
-    <p>LLMs generate text one token at a time. After reading the prompt, they produce the first token of the answer, add it to the sequence, and repeat. Each new token depends on the tokens before it.</p>
-    <p>The operation that retrieves information from earlier tokens is called attention.</p>
+    <h2 id="h-kv">The KV cache</h2>
+    <p>LLMs generate one token at a time, and each new token depends on the tokens before it. Attention retrieves that earlier information.</p>
   </section>
 
   <details class="col closer">
@@ -76,7 +75,7 @@
       <math display="block"><msub><mi>M</mi><mtext>KV</mtext></msub><mo>=</mo><mn>2</mn><mo>&#x00D7;</mo><mi>L</mi><mo>&#x00D7;</mo><msub><mi>n</mi><mtext>kv</mtext></msub><mo>&#x00D7;</mo><msub><mi>d</mi><mi>h</mi></msub><mo>&#x00D7;</mo><mi>b</mi><mo>&#x00D7;</mo><mi>T</mi></math>
       <span class="eqn">(2)</span>
     </div>
-    <p class="where">where the factor 2 counts keys and values, L&nbsp;=&nbsp;40 is the number of decoder layers, n<sub>kv</sub>&nbsp;=&nbsp;8 is the number of key and value sets per layer, d<sub>h</sub>&nbsp;=&nbsp;128 is the length of each key and value (Table&nbsp;2 of Part&nbsp;1), b is the bytes per number, and T is the number of tokens in the input prompt and answer together.</p>
+    <p class="where">where the factor 2 counts keys and values, L&nbsp;=&nbsp;40 is the number of decoder layers, n<sub>kv</sub>&nbsp;=&nbsp;8 is the number of key and value sets per layer, d<sub>h</sub>&nbsp;=&nbsp;128 is the length of each key and value (Table&nbsp;2 of Guide&nbsp;1), b is the bytes per number, and T is the number of tokens in the input prompt and answer together.</p>
     <p>For Qwen3-14B in BF16,</p>
     <div class="equation plain" role="group" aria-label="KV cache bytes per token calculation">
       <math display="block"><mn>2</mn><mo>&#x00D7;</mo><mn>40</mn><mo>&#x00D7;</mo><mn>8</mn><mo>&#x00D7;</mo><mn>128</mn><mo>&#x00D7;</mo><mn>2</mn><mo>=</mo><mn>163,840</mn><mtext>&nbsp;bytes</mtext></math>
@@ -96,7 +95,7 @@
 
   <section class="col prose" aria-labelledby="h-total">
     <h2 id="h-total">Total memory for <span class="nw">Qwen3-14B</span> on an 8&nbsp;GB laptop GPU</h2>
-    <p>Eq. (1) of Part&nbsp;1, which adds the memory used by the system, GPU software, weights, KV cache, and activations, can now be filled in.</p>
+    <p>Eq. (1) of Guide&nbsp;1, which adds the memory used by the system, GPU software, weights, KV cache, and activations, can now be filled in.</p>
     <p>Qwen3-14B needs about <strong>29.5&nbsp;GB</strong> for its BF16 weights. A short 3K-token input prompt and answer add about <strong>0.5&nbsp;GB</strong> for the KV cache. My laptop's system already occupies about <strong>2.2&nbsp;GB</strong>.</p>
     <p>That is already more than <strong>32&nbsp;GB</strong>, before GPU software and temporary activations are even counted, far more than the GPU's 8&nbsp;GB.</p>
     <p>Even the simple 4-bit weight estimate leaves essentially no room for the rest of the workload. About <strong>7.4&nbsp;GB</strong> of weights plus the measured <strong>2.2&nbsp;GB</strong> already used by the system exceed the physical capacity considered here before the KV cache, runtime allocations, and quantization metadata are added.</p>
@@ -137,7 +136,7 @@
         <div><dt>Total</dt><dd data-role="r-t"></dd></div>
       </dl>
       <p class="verdict" data-role="verdict" role="status"></p>
-      <p class="note">Weights come from M<sub>W</sub>&nbsp;=&nbsp;N&nbsp;&#x00D7;&nbsp;b (Part&nbsp;1), and the KV cache from Eq. (2). GPU-software memory and activations are not included and must be measured separately. Quantized files are also slightly larger than N × b because they store scale factors and other metadata.</p>
+      <p class="note">Weights come from M<sub>W</sub>&nbsp;=&nbsp;N&nbsp;&#x00D7;&nbsp;b (Guide&nbsp;1), and the KV cache from Eq. (2). GPU-software memory and activations are not included and must be measured separately. Quantized files are also slightly larger than N × b because they store scale factors and other metadata.</p>
     </div>
   </div>
 
@@ -184,24 +183,16 @@
     <p><strong>Request time per generated token</strong> is the total request wall time divided by the four generated tokens. It includes prompt prefill and is therefore not an isolated steady-state decode measurement.</p>
     <p>These results solve the capacity problem, but not the performance problem.</p>
     <p>Both systems run the 29.5&nbsp;GB BF16 model with measured PyTorch peaks below 2&nbsp;GB in this configuration. The measured requests average <strong>27 to 33 seconds of wall time per generated token</strong>.</p>
-    <p>AirLLM is faster at this operating point. <strong>Afterimage minimum-memory</strong> also unpacks its losslessly compressed weights before use, adding work that <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a> examines.</p>
+    <p>AirLLM is faster at this operating point. <strong>Afterimage minimum-memory</strong> also unpacks its losslessly compressed weights before use, adding work that <a href="/writing/moving-weights-storage-to-gpu/">Guide&nbsp;3</a> examines.</p>
     <p>Loading every layer from storage minimizes GPU-memory use, but it treats every weight as equally disposable. In practice, some weights may be worth keeping on the GPU, some may be worth keeping in RAM, and others may be cheap enough to reload.</p>
     <p>The best choice may not be determined by weight size alone. It depends on when the weight is needed, how expensive it is to prepare and move, and whether that work delays generation or can overlap with something already running.</p>
     <p>Parts 3 and 4 examine that problem.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">Conclusions</h2>
-    <p>The KV cache of Qwen3-14B was calculated from its configuration, the total memory was compared with my 8&nbsp;GB laptop GPU, and streamed execution was measured. The following were concluded:</p>
-    <ol class="conclusions">
-      <li>The KV cache stores keys and values for the input prompt and generated answer. It needs about 0.16&nbsp;MB per token and about 5.4&nbsp;GB at 32K tokens.</li>
-      <li>The BF16 weights, a short 3K-token input prompt and answer, and the system's own use already exceed 32&nbsp;GB, nearly 4 times the GPU memory, before GPU software and activations are counted.</li>
-      <li>The model uses its major weight groups sequentially. Loading each group only when it is needed lowers the measured GPU peak to under 2&nbsp;GB in the tested AirLLM and Afterimage configurations.</li>
-      <li>That capacity has a cost: the measured requests took 27 to 33 seconds of wall time per generated token.</li>
-    </ol>
-    <p>Therefore, running the released BF16 model on this GPU requires most weights to remain outside GPU memory and be delivered as execution progresses.</p>
-    <p><strong>The memory problem has become an optimization problem:</strong> deciding which weights stay on the GPU, which stay in RAM, and which are read again for every token.</p>
-    <p>The next part, <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a>, follows one weight from the SSD to the GPU and shows which steps delay the next token and which can run while the GPU computes.</p>
+    <h2 id="h-conc">The point</h2>
+    <p>For Qwen3-14B, the KV cache needs about 0.16&nbsp;MB per token and 5.4&nbsp;GB at 32K tokens. Streaming the major weight groups lowered the measured GPU peak below 2&nbsp;GB, but requests still took 27 to 33&nbsp;s per generated token.</p>
+    <p>That turns a capacity problem into a placement problem: which weights should remain on the GPU or in RAM, and which can be fetched again? <a href="/writing/moving-weights-storage-to-gpu/">Next: why streamed models are slow.</a></p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">
