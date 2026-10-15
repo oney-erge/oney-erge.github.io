@@ -224,6 +224,10 @@
   opacity: 0.55;
 }
 
+.card .coverCompact .coverBottom {
+  display: none;
+}
+
 .coverCompact {
   min-height: 0;
   aspect-ratio: 16 / 10;

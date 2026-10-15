@@ -1,0 +1,154 @@
+<article class="post" id="post-root">
+  <header class="col hero">
+    <p class="kicker">Speculative decoding on small GPUs · Part 2</p>
+    <h1>Variants of speculative decoding</h1>
+    <p class="deck"><a href="/writing/speculative-decoding-streamed-inference/">Part 1</a> used the simplest form of speculative decoding: a separate small model drafts a fixed number of tokens, and the large model checks them in one pass. Most variants change one of three choices: where the draft comes from, how many tokens to draft, and whether to check one guess or several. This part gives an overview, with my measurements for two of them.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
+  </header>
+
+  <div class="col prose">
+    <p>Every variant keeps the final step of Part&nbsp;1: the large model, the target model, checks the draft and keeps only the tokens it agrees with. With greedy decoding, the output is therefore the target model's own output in every variant. What changes is how the draft is made, and so how often it is right and what it costs.</p>
+    <p>Table 1 lists the three choices and the main options for each. The sections below take them in order.</p>
+  </div>
+
+  <div class="col block">
+    <p class="tcap"><b>Table 1.</b> The three choices in a speculative decoder.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Choice</th><th scope="col">Fixed speculation in Part&nbsp;1</th><th scope="col">Other options</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" class="wrap">Where the draft comes from</th><td class="wrap">A separate small model, Qwen3-0.6B</td><td class="wrap">The target model's own layers, extra prediction heads, or text already in the prompt</td></tr>
+          <tr><th scope="row" class="wrap">How many tokens to draft</th><td class="wrap">Always 8</td><td class="wrap">Decided again in every round</td></tr>
+          <tr><th scope="row" class="wrap">What is checked</th><td class="wrap">One chain of guesses</td><td class="wrap">A tree of alternative guesses</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-source">
+    <h2 id="h-source">Where the draft comes from</h2>
+    <h3>A separate draft model</h3>
+    <p>A separate small model is the original form <a class="cite" href="#ref-1">[1]</a>. It needs no training, but it must share the target model's tokenizer, and it takes memory: about 1.3&nbsp;GB of GPU memory on my laptop (Part&nbsp;1).</p>
+
+    <h3>The target model's own layers</h3>
+    <p><strong>Self-speculation</strong> drafts with the target model itself, using only some of its layers, so no second model is stored. Draft &amp; Verify skips selected middle layers while drafting and needs no training. LayerSkip trains the model so that its early layers can already predict the next token, then drafts from those layers <a class="cite" href="#ref-2">[2]</a>.</p>
+    <p>I tested the untrained form on Qwen3-14B, drafting from the output of its first 4 or first 8 of 40 decoder layers. In this short test, with one prompt and 4 tokens, the target model accepted none of the draft tokens at either depth, so every round produced exactly one token <a class="cite" href="#ref-8">[8]</a>. Without training for early exit, the early layers of this model do not predict the next token well enough.</p>
+
+    <h3>Extra prediction heads</h3>
+    <p>Medusa adds several small output heads to the target model, each predicting a token further ahead, and trains only those heads. EAGLE trains one small extra layer that predicts the target model's internal representation one step ahead, and drafts from it <a class="cite" href="#ref-3">[3]</a>. Both need a training run for each model, but no separate draft model.</p>
+
+    <h3>Text already in the prompt</h3>
+    <p>Prompt lookup decoding needs no draft model at all. When the last few tokens of the answer also appear in the input prompt, it proposes the tokens that followed them there <a class="cite" href="#ref-4">[4]</a>. This works well when the answer repeats the input, as in summaries or code edits. Lookahead decoding also has no draft model: the target model generates and checks short candidate sequences in parallel during its own passes <a class="cite" href="#ref-4">[4]</a>.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-length">
+    <h2 id="h-length">How many tokens to draft</h2>
+    <p>Fixed speculation drafts the same 8 tokens in every round. When the draft goes wrong early, the rest of it is wasted. Adaptive methods stop drafting when the next draft token is likely to be rejected: SpecDec++ trains a small head that predicts the chance of a rejection, and DISCO uses a small classifier <a class="cite" href="#ref-5">[5]</a>. Both report modest gains over a fixed length, about 7 to 10%.</p>
+    <p>In streamed inference, the trade-off is lopsided. Eq. (2) of Part&nbsp;1 shows why: a wasted draft token costs tens of milliseconds, while one pass of the target model costs seconds. Stopping early saves little, and stopping too early gives up tokens that the pass could have checked almost for free.</p>
+    <p>My measurements agree. I tested three adaptive policies on Qwen3-14B against a fixed draft length <a class="cite" href="#ref-8">[8]</a>:</p>
+    <ol class="procedure">
+      <li><span>Policy 1</span><span class="stepbody">A learning policy that adjusts k after each round cut k to 1 after a few rejections and was slower than the fixed draft: 7.7 against 7.2&nbsp;s per token, on one prompt with 16 sampled tokens.</span></li>
+      <li><span>Policy 2</span><span class="stepbody">A threshold policy tied with the fixed draft, within the run-to-run noise of the same test.</span></li>
+      <li><span>Policy 3</span><span class="stepbody">A stopping policy that weighs the chance of rejection against the cost of drafting was slower on the four prompts of Part&nbsp;1: 9.8 against 9.2&nbsp;s per token.</span></li>
+    </ol>
+    <p>For a model streamed through a small GPU, a long fixed draft is close to the best choice. Adaptive length matters more when the target model fits on the GPU and a pass is fast.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-tree">
+    <h2 id="h-tree">One guess or a tree of guesses</h2>
+    <p>A chain of draft tokens has one weak point: a single wrong token discards everything after it. A <strong>tree draft</strong> keeps several alternatives at each position, and the target model checks the whole tree in one pass, with each token seeing only its own branch <a class="cite" href="#ref-6">[6]</a>. The longest branch the target model agrees with is kept. Figure 1 compares the two with a simple example.</p>
+  </section>
+
+  <div class="wide block">
+    <figure class="lanes" aria-labelledby="tree-cap">
+      <div class="scroll"><svg viewBox="0 0 800 290" role="img" aria-label="Left, a chain draft whose first token is rejected, so the pass keeps only the target model's own token. Right, a tree draft whose branch Paris, period, It is accepted, so the pass keeps four tokens.">
+        <text class="tl-title" x="10" y="24">Chain draft</text>
+        <rect class="tl-gray" x="10" y="124" width="100" height="34" rx="4"/><text class="tl-in2" x="60" y="146">…France is</text>
+        <line class="tl-edge" x1="110" y1="141" x2="130" y2="141"/>
+        <rect class="tl-rej" x="130" y="124" width="62" height="34" rx="4"/><text class="tl-in2" x="161" y="146">a</text>
+        <line class="tl-edge" x1="192" y1="141" x2="206" y2="141"/>
+        <rect class="tl-off" x="206" y="124" width="62" height="34" rx="4"/><text class="tl-in2" x="237" y="146">city</text>
+        <line class="tl-edge" x1="268" y1="141" x2="282" y2="141"/>
+        <rect class="tl-off" x="282" y="124" width="62" height="34" rx="4"/><text class="tl-in2" x="313" y="146">in</text>
+        <text class="tl-warn" x="161" y="178">rejected</text>
+        <text class="c-text" x="275" y="178" text-anchor="middle">discarded</text>
+        <text class="tl-note" x="10" y="236">The pass keeps the target model's</text>
+        <text class="tl-note" x="10" y="254">own token, "Paris": 1 token.</text>
+
+        <line class="c-grid" x1="392" y1="16" x2="392" y2="270"/>
+
+        <text class="tl-title" x="410" y="24">Tree draft</text>
+        <rect class="tl-gray" x="410" y="124" width="100" height="34" rx="4"/><text class="tl-in2" x="460" y="146">…France is</text>
+        <path class="tl-edge" d="M510 141 C525 141 525 85 540 85"/>
+        <path class="tl-edge" d="M510 141 C525 141 525 197 540 197"/>
+        <rect class="tl-acc" x="540" y="68" width="66" height="34" rx="4"/><text class="tl-in2" x="573" y="90">Paris</text>
+        <rect class="tl-off" x="540" y="180" width="66" height="34" rx="4"/><text class="tl-in2" x="573" y="202">a</text>
+        <path class="tl-edge" d="M606 85 C617 85 617 58 628 58"/>
+        <path class="tl-edge" d="M606 85 C617 85 617 112 628 112"/>
+        <rect class="tl-acc" x="628" y="41" width="56" height="34" rx="4"/><text class="tl-in2" x="656" y="63">.</text>
+        <rect class="tl-off" x="628" y="95" width="56" height="34" rx="4"/><text class="tl-in2" x="656" y="117">,</text>
+        <line class="tl-edge" x1="684" y1="58" x2="700" y2="58"/>
+        <rect class="tl-acc" x="700" y="41" width="60" height="34" rx="4"/><text class="tl-in2" x="730" y="63">It</text>
+        <text class="tl-ok" x="692" y="32">accepted branch</text>
+        <text class="tl-note" x="410" y="236">The pass keeps "Paris . It" and the</text>
+        <text class="tl-note" x="410" y="254">target model's next token: 4 tokens.</text>
+      </svg></div>
+      <figcaption id="tree-cap"><b>Figure 1.</b> One pass of the target model checking a chain draft and a small tree draft, simple example. In the chain, the first draft token is wrong, so the other draft tokens are lost. In the tree, an alternative at each position lets the pass keep the branch the target model agrees with. The tokens are illustrative.</figcaption>
+    </figure>
+  </div>
+
+  <div class="col prose">
+    <p>SpecInfer introduced tree checking for serving LLMs, and Medusa and EAGLE also check trees <a class="cite" href="#ref-6">[6]</a>. Trees suit streamed inference especially well. When a pass is dominated by loading weights, checking hundreds of tokens costs about the same as checking one. SpecExec uses this for models offloaded to RAM: it builds large trees from the draft model's most likely continuations and reports up to 20 accepted tokens per pass <a class="cite" href="#ref-6">[6]</a>.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-side">
+    <h2 id="h-side">The variants side by side</h2>
+    <p>Table 2 places the variants above by their draft source, the training they need, and the extra memory they use. A survey by Xia et al. compares many more <a class="cite" href="#ref-7">[7]</a>.</p>
+  </section>
+
+  <div class="col block">
+    <p class="tcap"><b>Table 2.</b> Main speculative decoding variants. Every one keeps the target model's check, so with greedy decoding each returns the target model's own output; Medusa also offers a relaxed acceptance rule that gives up this exactness for speed <a class="cite" href="#ref-3">[3]</a>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Variant</th><th scope="col">Draft source</th><th scope="col">Training needed</th><th scope="col">Extra memory</th></tr></thead>
+        <tbody>
+          <tr class="hl"><th scope="row">Draft model <a class="cite" href="#ref-1">[1]</a></th><td class="wrap">Separate small model</td><td class="wrap">None</td><td class="wrap">The draft model</td></tr>
+          <tr><th scope="row">Draft &amp; Verify <a class="cite" href="#ref-2">[2]</a></th><td class="wrap">Target model, some layers skipped</td><td class="wrap">None</td><td class="wrap">None</td></tr>
+          <tr><th scope="row">LayerSkip <a class="cite" href="#ref-2">[2]</a></th><td class="wrap">Target model's early layers</td><td class="wrap">Training the model for early exit</td><td class="wrap">None</td></tr>
+          <tr><th scope="row">Medusa <a class="cite" href="#ref-3">[3]</a></th><td class="wrap">Extra prediction heads</td><td class="wrap">The heads only</td><td class="wrap">Small</td></tr>
+          <tr><th scope="row">EAGLE <a class="cite" href="#ref-3">[3]</a></th><td class="wrap">One extra predicting layer</td><td class="wrap">That layer only</td><td class="wrap">Small</td></tr>
+          <tr><th scope="row">Prompt lookup <a class="cite" href="#ref-4">[4]</a></th><td class="wrap">Matching text in the prompt</td><td class="wrap">None</td><td class="wrap">None</td></tr>
+          <tr><th scope="row">Lookahead <a class="cite" href="#ref-4">[4]</a></th><td class="wrap">Target model's own parallel guesses</td><td class="wrap">None</td><td class="wrap">Small</td></tr>
+          <tr><th scope="row">SpecExec <a class="cite" href="#ref-6">[6]</a></th><td class="wrap">Draft model, as a large tree</td><td class="wrap">None</td><td class="wrap">The draft model</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-conc">
+    <h2 id="h-conc">Conclusions</h2>
+    <p>The main variants of speculative decoding were compared by where the draft comes from, how many tokens are drafted, and whether one chain or a tree is checked, and two of the choices were measured on my laptop. The following were concluded:</p>
+    <ol class="conclusions">
+      <li>Every variant keeps the target model's check, so the variants differ in speed and cost, not in the output, apart from relaxed acceptance rules such as Medusa's.</li>
+      <li>In a short test, drafting from the target model's own early layers did not work without training: the target model accepted none of the draft tokens from the first 4 or 8 layers of Qwen3-14B.</li>
+      <li>Adaptive draft length did not beat a fixed 8-token draft in my measurements, because in streamed inference a wasted draft token costs little next to one pass.</li>
+      <li>Tree drafts suit streamed inference, because one pass can check many tokens for about the cost of one.</li>
+    </ol>
+    <p>Therefore, for a large model streamed through a small GPU, the simplest form, a separate draft model with a long fixed draft, was the best of the options I tested, and tree drafts are the next variant to test.</p>
+    <p>Later parts of this series will build a small speculative decoder step by step and measure its acceptance rate on the same laptop.</p>
+  </section>
+
+  <section class="col prose refs-section" aria-labelledby="h-refs">
+    <h2 id="h-refs">References</h2>
+    <ol class="refs">
+      <li id="ref-1"><span>Speculative decoding and speculative sampling: Y. Leviathan, M. Kalman, and Y. Matias. 2023. “<a href="https://arxiv.org/abs/2211.17192">Fast Inference from Transformers via Speculative Decoding</a>,” ICML 2023; C. Chen et al. 2023. “<a href="https://arxiv.org/abs/2302.01318">Accelerating Large Language Model Decoding with Speculative Sampling</a>,” arXiv:2302.01318.</span></li>
+      <li id="ref-2"><span>Self-speculation: J. Zhang et al. 2024. “<a href="https://aclanthology.org/2024.acl-long.607">Draft &amp; Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding</a>,” ACL 2024; M. Elhoushi et al. 2024. “<a href="https://arxiv.org/abs/2404.16710">LayerSkip: Enabling Early Exit Inference and Self-Speculative Decoding</a>,” ACL 2024.</span></li>
+      <li id="ref-3"><span>Extra prediction heads: T. Cai et al. 2024. “<a href="https://arxiv.org/abs/2401.10774">Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads</a>,” ICML 2024; Y. Li, F. Wei, C. Zhang, and H. Zhang. 2024. “<a href="https://arxiv.org/abs/2401.15077">EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty</a>,” ICML 2024.</span></li>
+      <li id="ref-4"><span>No draft model: A. Saxena. 2023. <a href="https://github.com/apoorvumang/prompt-lookup-decoding">Prompt Lookup Decoding</a>, GitHub; Y. Fu, P. Bailis, I. Stoica, and H. Zhang. 2024. “<a href="https://arxiv.org/abs/2402.02057">Break the Sequential Dependency of LLM Inference Using Lookahead Decoding</a>,” ICML 2024.</span></li>
+      <li id="ref-5"><span>Adaptive draft length: K. Huang, X. Guo, and M. Wang. 2024. “<a href="https://arxiv.org/abs/2405.19715">SpecDec++: Boosting Speculative Decoding via Adaptive Candidate Lengths</a>,” arXiv:2405.19715; J. Mamou et al. 2024. “<a href="https://arxiv.org/abs/2405.04304">Accelerating Speculative Decoding using Dynamic Speculation Length</a>,” arXiv:2405.04304.</span></li>
+      <li id="ref-6"><span>Tree drafts: X. Miao et al. 2024. “<a href="https://arxiv.org/abs/2305.09781">SpecInfer: Accelerating Large Language Model Serving with Tree-based Speculative Inference and Verification</a>,” ASPLOS 2024; R. Svirschevski et al. 2024. “<a href="https://arxiv.org/abs/2406.02532">SpecExec: Massively Parallel Speculative Decoding for Interactive LLM Inference on Consumer Devices</a>,” NeurIPS 2024.</span></li>
+      <li id="ref-7"><span>H. Xia et al. 2024. “<a href="https://arxiv.org/abs/2401.07851">Unlocking Efficiency in Large Language Model Inference: A Comprehensive Survey of Speculative Decoding</a>,” Findings of ACL 2024.</span></li>
+      <li id="ref-8"><span>O. Erge, <a href="https://github.com/oney-erge/Afterimage">Afterimage</a>. Self-speculation and adaptive draft-length measurements in <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/RESULTS_LOG.md"><code>docs/RESULTS_LOG.md</code></a> and <a href="https://github.com/oney-erge/Afterimage/blob/main/docs/ALL_HYPOTHESES_AND_BASELINES.md"><code>docs/ALL_HYPOTHESES_AND_BASELINES.md</code></a>.</span></li>
+    </ol>
+  </section>
+</article>

@@ -17,9 +17,19 @@ export function WritingSeriesFeature({ series, parts }: { series: WritingSeries;
   const published = parts.filter((post) => post.status === "published").length;
   const headingId = `series-${series.id}`;
 
+  const cards = (
+    <ol className={styles.parts} data-count={parts.length}>
+      {parts.map((post) => (
+        <li key={post.slug}>
+          <WritingPartCard post={post} />
+        </li>
+      ))}
+    </ol>
+  );
+
   return (
     <div className={styles.series} aria-labelledby={headingId} role="group">
-      <div className={`${styles.intro} ${series.trailer ? "" : styles.introText}`}>
+      <div className={`${styles.intro} ${series.trailer ? "" : styles.introCards}`}>
         <div className={styles.copy}>
           <p className={styles.kicker}>
             Series · {parts.length} parts{published < parts.length ? ` · ${published} published` : ""}
@@ -32,7 +42,7 @@ export function WritingSeriesFeature({ series, parts }: { series: WritingSeries;
             </Link>
           )}
         </div>
-        {series.trailer && (
+        {series.trailer ? (
           <figure className={styles.trailer}>
             <video controls preload="none" playsInline poster={series.trailer.poster}>
               <source src={series.trailer.src} type="video/mp4" />
@@ -40,15 +50,11 @@ export function WritingSeriesFeature({ series, parts }: { series: WritingSeries;
             </video>
             <figcaption>{series.trailer.title} · narrated, with captions</figcaption>
           </figure>
+        ) : (
+          cards
         )}
       </div>
-      <ol className={styles.parts} data-count={parts.length}>
-        {parts.map((post) => (
-          <li key={post.slug}>
-            <WritingPartCard post={post} />
-          </li>
-        ))}
-      </ol>
+      {series.trailer && cards}
     </div>
   );
 }

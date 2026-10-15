@@ -57,3 +57,5 @@ next-env.d.ts
 !/src/app/writing/kv-cache-streamed-inference-consumer-gpu/
 !/src/app/writing/moving-weights-storage-to-gpu/
 !/src/app/writing/schedule-aware-exact-weight-placement/
+!/src/app/writing/speculative-decoding-streamed-inference/
+!/src/app/writing/speculative-decoding-variants/

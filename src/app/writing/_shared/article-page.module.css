@@ -28,7 +28,7 @@
 
 .headerInner,
 .footer {
-  width: min(calc(100% - 3rem), 58rem);
+  width: min(calc(100% - 3rem), 66rem);
   margin-inline: auto;
 }
 
@@ -209,7 +209,7 @@ a.seriesCard:hover {
 @media (max-width: 820px) {
   .headerInner,
   .footer {
-    width: min(calc(100% - 2rem), 58rem);
+    width: min(calc(100% - 2rem), 66rem);
   }
 
   .main {

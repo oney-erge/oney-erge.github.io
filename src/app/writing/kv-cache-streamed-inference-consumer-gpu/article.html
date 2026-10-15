@@ -2,7 +2,7 @@
   <header class="col hero">
     <p class="kicker">Running large language models on small GPUs · Part 2</p>
     <h1>KV cache memory and streamed inference on a consumer GPU</h1>
-    <p class="deck">In <a href="/writing/llm-memory-requirements-consumer-gpu/">Part 1</a>, I calculated that the released BF16 weights of Qwen3-14B need 29.5&nbsp;GB, more than 3 times the memory of my 8&nbsp;GB laptop GPU, but that the model uses them one part at a time. This part adds the memory that grows with the conversation, and measures what happens when the weights are loaded only when they are needed.</p>
+    <p class="deck">In <a href="/writing/llm-memory-requirements-consumer-gpu/">Part 1</a>, the released weights of Qwen3-14B needed 29.5&nbsp;GB, more than 3 times the memory of my 8&nbsp;GB laptop GPU. The input prompt and the answer need GPU memory too, and that memory grows with every token. This part calculates that memory, called the KV cache, and then measures what happens when the weights are loaded one part at a time.</p>
     <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>9 min read</span></div>
   </header>
 
@@ -184,11 +184,11 @@
     <p>Both systems run the 29.5&nbsp;GB BF16 model with measured PyTorch peaks below 2&nbsp;GB in this configuration. The measured requests average <strong>27 to 33 seconds of wall time per generated token</strong>.</p>
     <p>The model is no longer prevented from running because all of its weights cannot fit on the GPU. Instead, execution depends on repeatedly retrieving, preparing, transferring, and executing the weights required by each stage.</p>
     <p>AirLLM is faster at this operating point. <strong>Afterimage exact minimum-memory</strong> also reconstructs its losslessly stored weights before execution, adding work that <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a> examines.</p>
-    <p>Loading every layer from storage minimizes GPU-memory use, but it treats every weight as equally disposable. In practice, some weights may be worth keeping on the GPU, some may be worth keeping in system memory, and others may be cheap enough to reload.</p>
+    <p>Loading every layer from storage minimizes GPU-memory use, but it treats every weight as equally disposable. In practice, some weights may be worth keeping on the GPU, some may be worth keeping in RAM, and others may be cheap enough to reload.</p>
     <p><strong>This starts to look like an optimization problem.</strong></p>
-    <p>Given fixed GPU and system-memory budgets, the question becomes which weights should remain in each memory tier and which should be retrieved again during execution.</p>
+    <p>Given fixed budgets of GPU memory and RAM, the question becomes which weights should stay in each place and which should be read again during execution.</p>
     <p>The best choice may not be determined by weight size alone. It depends on when the weight is needed, how expensive it is to prepare and move, and whether that work delays generation or can overlap with something already running.</p>
-    <p>Later parts of this series will examine that problem.</p>
+    <p>Parts 3 and 4 examine that problem.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-conc">
@@ -201,8 +201,8 @@
       <li>That capacity has a cost: the measured requests took 27 to 33 seconds of wall time per generated token.</li>
     </ol>
     <p>Therefore, running the released BF16 model on this GPU requires most weights to remain outside GPU memory and be delivered as execution progresses.</p>
-    <p><strong>The memory problem has become an optimization problem:</strong> which weights should remain on the GPU, which should remain in system memory, and which should be retrieved again?</p>
-    <p>The next part, <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a>, examines the execution path of streamed inference to determine which operations lie on the critical path to the next token and which work can be overlapped or avoided.</p>
+    <p><strong>The memory problem has become an optimization problem:</strong> deciding which weights stay on the GPU, which stay in RAM, and which are read again for every token.</p>
+    <p>The next part, <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a>, follows one weight from the SSD to the GPU and shows which steps delay the next token and which can run while the GPU computes.</p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

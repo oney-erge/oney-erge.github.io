@@ -43,12 +43,18 @@ export const writingSeries: WritingSeries[] = [
     id: "small-gpus",
     title: "Running large language models on small GPUs",
     description:
-      "Four short parts, from what fills GPU memory to the schedule-aware weight placement in my paper, using exact weights throughout.",
+      "Four connected parts, from what fills GPU memory to the schedule-aware weight placement in my paper, using exact weights throughout.",
     trailer: {
       src: "/media/h65-explainer-1min.mp4",
       poster: "/media/h65-explainer-1min-poster.jpg",
       title: "The series in one minute",
     },
+  },
+  {
+    id: "speculative-decoding",
+    title: "Speculative decoding on small GPUs",
+    description:
+      "How a small draft model lets one slow pass of a large model produce several tokens without changing its output, and the main variants of the idea.",
   },
 ];
 
@@ -144,6 +150,52 @@ const allPosts: WritingPost[] = [
       metric: "−23%",
       caption: "Peak GPU memory · Llama-3.3-70B",
       note: "Lower in all 20 matched requests",
+    },
+  },
+  {
+    slug: "speculative-decoding-streamed-inference",
+    href: "/writing/speculative-decoding-streamed-inference/",
+    title: "Speculative decoding for streamed language model inference",
+    hook: "A small draft model guesses ahead, and one slow pass checks several tokens at once.",
+    description:
+      "How speculative decoding drafts and checks tokens, why the output stays the large model's own, the expected tokens per pass, and fixed speculation measured on Qwen3-14B streamed through an 8 GB laptop GPU.",
+    seriesId: "speculative-decoding",
+    part: 1,
+    status: "published",
+    datePublished: "2026-10-14T19:00:00-05:00",
+    dateModified: "2026-10-14T19:00:00-05:00",
+    dateLabel: "October 14, 2026",
+    readingTime: "8 min read",
+    tags: ["Speculative decoding", "LLM inference", "Streaming"],
+    socialImage: "/media/afterimage-social.png",
+    cover: {
+      label: "Fixed speculation",
+      metric: "9.2 s",
+      caption: "Per token · Qwen3-14B · 3.8 GB",
+      note: "17 s per token without speculation",
+    },
+  },
+  {
+    slug: "speculative-decoding-variants",
+    href: "/writing/speculative-decoding-variants/",
+    title: "Variants of speculative decoding",
+    hook: "Where the draft comes from, how long it is, and why trees suit streamed models.",
+    description:
+      "An overview of speculative decoding variants by draft source, draft length, and chain or tree checking, with measured self-speculation and adaptive draft-length results on a laptop GPU.",
+    seriesId: "speculative-decoding",
+    part: 2,
+    status: "published",
+    datePublished: "2026-10-14T19:00:00-05:00",
+    dateModified: "2026-10-14T19:00:00-05:00",
+    dateLabel: "October 14, 2026",
+    readingTime: "7 min read",
+    tags: ["Speculative decoding", "Self-speculation", "Token trees"],
+    socialImage: "/media/afterimage-social.png",
+    cover: {
+      label: "Variants",
+      metric: "3 choices",
+      caption: "In every speculative decoder",
+      note: "Draft source, length, and shape",
     },
   },
 ];

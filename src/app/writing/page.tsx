@@ -80,7 +80,7 @@ export default function WritingPage() {
             if (parts.length === 0) return null;
             const headingId = `${series.id}-heading`;
             return (
-              <section className={styles.archive} id={series.id} key={series.id} aria-labelledby={headingId}>
+              <section className={styles.archive} id={`series-${series.id}`} key={series.id} aria-labelledby={headingId}>
                 <header className={styles.sectionHeader}>
                   <h2 id={headingId}>{series.title}</h2>
                   <p>Series · {String(parts.length).padStart(2, "0")} parts · <a href={FEED_PATH}>RSS feed</a></p>

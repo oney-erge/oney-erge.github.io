@@ -2,7 +2,7 @@
   <header class="col hero">
     <p class="kicker">Running large language models on small GPUs · Part 3</p>
     <h1>Moving weights from storage to the GPU during streamed inference</h1>
-    <p class="deck">In <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a>, loading Qwen3-14B one part at a time ran the 29.5&nbsp;GB model in under 2&nbsp;GB of GPU memory, but each generated token took 27 to 33 seconds. This part follows one weight from storage to the GPU to see where that time goes, and when it actually delays the answer.</p>
+    <p class="deck">In <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a>, loading Qwen3-14B one part at a time made the 29.5&nbsp;GB model fit in under 2&nbsp;GB of GPU memory, but each generated token took 27 to 33 seconds. This part follows one weight from the SSD to the GPU, to show where that time goes and when it actually delays the next token.</p>
     <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
   </header>
 
@@ -131,7 +131,7 @@
   <div class="col prose">
     <p>With about 4&nbsp;GB, both approaches take 14 to 17&nbsp;seconds per token instead of 27 to 33. The extra memory is spent on weights that no longer make the trip.</p>
     <p>This is also where compression finally helps. With fewer bytes left to read and unpacking done in larger pieces, Afterimage's 4&nbsp;GB plan runs 1.9 times faster than its own minimum-memory point.</p>
-    <p>That leaves the question this series has been building to. A few gigabytes of spare memory hold only some of the weights. Afterimage's 4&nbsp;GB plan chose them with a sensible rule: keep the weights that save the most data movement per byte of memory they occupy.</p>
+    <p>That leaves the question this series has been building to. A few gigabytes of spare memory hold only some of the weights. Afterimage's 4&nbsp;GB plan chose them with a sensible rule, which I call the data-movement rule: keep the weights that save the most data movement per byte of memory they occupy.</p>
     <p><strong>Part&nbsp;4 shows why that rule can still keep the wrong weights.</strong></p>
   </div>
 
