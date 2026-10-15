@@ -2,10 +2,9 @@ export type WritingSeries = {
   id: string;
   title: string;
   description: string;
-  /** Short narrated video that introduces the whole series. */
+  /** Short narrated video, linked from the home page. */
   trailer?: {
     src: string;
-    poster: string;
     title: string;
   };
 };
@@ -14,6 +13,10 @@ export type WritingPost = {
   slug: string;
   href: string;
   title: string;
+  /** Few-word title for the one-line part lists on the home page. */
+  shortTitle: string;
+  /** Optional label shown next to the short title, such as "Paper". */
+  badge?: string;
   /** One line used in series lists. */
   hook: string;
   description: string;
@@ -46,8 +49,7 @@ export const writingSeries: WritingSeries[] = [
       "Four connected parts, from what fills GPU memory to the schedule-aware weight placement in my paper, using exact weights throughout.",
     trailer: {
       src: "/media/h65-explainer-1min.mp4",
-      poster: "/media/h65-explainer-1min-poster.jpg",
-      title: "The series in one minute",
+      title: "Watch my paper in one minute",
     },
   },
   {
@@ -64,6 +66,7 @@ const allPosts: WritingPost[] = [
     slug: "llm-memory-requirements-consumer-gpu",
     href: "/writing/llm-memory-requirements-consumer-gpu/",
     title: "Memory requirements of language model inference on a consumer GPU",
+    shortTitle: "GPU memory requirements",
     hook: "What has to fit in GPU memory, and why a 14B model's weights do not.",
     description:
       "What occupies GPU memory while a language model runs, calculated for Qwen3-14B on an 8 GB laptop GPU: system use, number formats, and the weights of each model part.",
@@ -87,6 +90,7 @@ const allPosts: WritingPost[] = [
     slug: "kv-cache-streamed-inference-consumer-gpu",
     href: "/writing/kv-cache-streamed-inference-consumer-gpu/",
     title: "KV cache memory and streamed inference on a consumer GPU",
+    shortTitle: "KV cache and streamed inference",
     hook: "The memory that grows with the conversation, and running the model one part at a time.",
     description:
       "The KV cache of Qwen3-14B calculated token by token, the total memory on an 8 GB laptop GPU, and measured streamed execution that runs the 29.5 GB model in under 2 GB.",
@@ -110,6 +114,7 @@ const allPosts: WritingPost[] = [
     slug: "moving-weights-storage-to-gpu",
     href: "/writing/moving-weights-storage-to-gpu/",
     title: "Moving weights from storage to the GPU during streamed inference",
+    shortTitle: "Moving weights from storage to the GPU",
     hook: "Where the 27 seconds per token go: read, unpack, copy, and waiting.",
     description:
       "One weight's trip from SSD to GPU memory on a laptop: read, unpack, and copy times, what lossless compression saves and costs, and when loading makes the GPU wait.",
@@ -133,6 +138,8 @@ const allPosts: WritingPost[] = [
     slug: "schedule-aware-exact-weight-placement",
     href: "/writing/schedule-aware-exact-weight-placement/",
     title: "Schedule-aware exact weight placement for language models with limited GPU memory",
+    shortTitle: "Schedule-aware weight placement",
+    badge: "Paper",
     hook: "My paper: choosing which weights stay close by replaying a recorded request.",
     description:
       "A summary of my H6.5 paper with a 3-minute video: the placement decision, why bytes are the wrong guide, replaying a recorded request, and the measured results.",
@@ -156,6 +163,7 @@ const allPosts: WritingPost[] = [
     slug: "speculative-decoding-streamed-inference",
     href: "/writing/speculative-decoding-streamed-inference/",
     title: "Speculative decoding for streamed language model inference",
+    shortTitle: "Speculative decoding for streamed inference",
     hook: "A small draft model guesses ahead, and one slow pass checks several tokens at once.",
     description:
       "How speculative decoding drafts and checks tokens, why the output stays the large model's own, the expected tokens per pass, and fixed speculation measured on Qwen3-14B streamed through an 8 GB laptop GPU.",
@@ -179,6 +187,7 @@ const allPosts: WritingPost[] = [
     slug: "speculative-decoding-variants",
     href: "/writing/speculative-decoding-variants/",
     title: "Variants of speculative decoding",
+    shortTitle: "Variants of speculative decoding",
     hook: "Where the draft comes from, how long it is, and why trees suit streamed models.",
     description:
       "An overview of speculative decoding variants by draft source, draft length, and chain or tree checking, with measured self-speculation and adaptive draft-length results on a laptop GPU.",

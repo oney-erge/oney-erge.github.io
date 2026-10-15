@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { HomepageSectionNav } from "@/components/homepage-section-nav";
 import { ProjectVisual } from "@/components/project-visual";
-import { WritingSeriesFeature } from "@/components/writing-series";
+import { WritingSeriesList } from "@/components/writing-series";
 import { projects, type Project } from "@/data/projects";
 import { SITE_MODIFIED, SITE_PUBLISHED, SITE_YEAR } from "@/data/site";
 import { getSeriesParts, writingSeries } from "@/data/writing";
@@ -343,7 +343,7 @@ export default function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema).replace(/</g, "\\u003c") }} />
-      <a className={styles.skipLink} href="#writing">Skip to writing</a>
+      <a className={styles.skipLink} href="#work">Skip to projects</a>
 
       <main className={styles.page} id="top">
         <header className={styles.profile}>
@@ -369,16 +369,6 @@ export default function Home() {
 
         <HomepageSectionNav className={styles.jumpNav} activeClassName={styles.activeNavLink} />
 
-        <section className={`${styles.section} ${styles.writingSection}`} id="writing" aria-labelledby="writing-heading">
-          <header className={styles.writingHeader}>
-            <h2 id="writing-heading">Writing</h2>
-          </header>
-          {writingSeries.map((series) => (
-            <WritingSeriesFeature key={series.id} series={series} parts={getSeriesParts(series.id)} />
-          ))}
-          <Link className={styles.textLink} href="/writing/">Browse all writing <Arrow /></Link>
-        </section>
-
         <section className={`${styles.section} ${styles.workBreakout}`} id="work" aria-labelledby="work-heading">
           <header className={styles.sectionHeader}>
             <h2 id="work-heading">Projects</h2>
@@ -386,6 +376,19 @@ export default function Home() {
           </header>
           <ol className={styles.projectGrid}>{projects.map((project) => <ProjectCard key={project.repo} project={project} />)}</ol>
           <a className={styles.textLink} href={GITHUB} target="_blank" rel="noreferrer">More on GitHub <Arrow /></a>
+        </section>
+
+        <section className={styles.section} id="writing" aria-labelledby="writing-heading">
+          <header className={styles.sectionHeader}>
+            <h2 id="writing-heading">Writing</h2>
+            <p>Technical series on running large language models with limited GPU memory, built on my own measurements.</p>
+          </header>
+          <div className={styles.writingColumns}>
+            {writingSeries.map((series) => (
+              <WritingSeriesList key={series.id} series={series} parts={getSeriesParts(series.id)} />
+            ))}
+          </div>
+          <Link className={styles.textLink} href="/writing/">All writing <Arrow /></Link>
         </section>
 
         <section className={styles.section} id="background" aria-labelledby="background-heading">

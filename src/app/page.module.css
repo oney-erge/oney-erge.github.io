@@ -357,19 +357,10 @@
   margin-top: 1.25rem;
 }
 
-.writingSection {
-  padding-top: clamp(3rem, 6vw, 4.2rem);
-}
-
-.writingHeader {
-  margin-bottom: 1.5rem;
-}
-
-.writingHeader h2 {
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
-  font-weight: 650;
-  line-height: 1.06;
-  letter-spacing: -0.045em;
+.writingColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem clamp(2rem, 5vw, 4rem);
 }
 
 .timeline {
@@ -844,6 +835,11 @@
 }
 
 @media (max-width: 760px) {
+  .writingColumns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.25rem;
+  }
+
   .page,
   .footer {
     width: calc(100% - 2rem);

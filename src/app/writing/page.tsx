@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { WritingCover } from "@/components/writing-card";
 import { FEED_ALTERNATES, FEED_PATH, SITE, SITE_YEAR } from "@/data/site";
 import { WRITING_DESCRIPTION as DESCRIPTION, getSeriesParts, writingPosts, writingSeries } from "@/data/writing";
 import styles from "./page.module.css";
@@ -93,16 +92,11 @@ export default function WritingPage() {
                         <span className={styles.archiveNumber}>{String(post.part).padStart(2, "0")}</span>
                         <div className={styles.archiveCopy}>
                           <div className={styles.archiveMeta}>
-                            <span>Part {post.part}</span>
                             <time dateTime={post.datePublished}>{post.dateLabel}</time>
                             <span>{post.readingTime}</span>
                           </div>
                           <h3>{post.title}</h3>
                           <p className={styles.archiveDescription}>{post.description}</p>
-                          <p className={styles.archiveSeries}>{post.tags.join(" · ")}</p>
-                        </div>
-                        <div className={styles.archivePreview}>
-                          <WritingCover post={post} compact />
                         </div>
                         <span className={styles.archiveArrow} aria-hidden="true">
                           <svg viewBox="0 0 16 16"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" /></svg>
