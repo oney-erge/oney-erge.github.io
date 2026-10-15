@@ -312,6 +312,28 @@
 .post .tl-off { fill: var(--p-surface-muted); stroke: var(--p-line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
 .post .tl-edge { stroke: var(--p-line-strong); stroke-width: 1.5; fill: none; }
 .post .tl-title { fill: var(--p-ink); font: 700 13px var(--p-sans); }
+.post .lanes svg.fit { min-width: 0; }
+.post .lanes .fig-narrow { display: none; }
+.post .stack-svgs svg { display: block; width: 100%; height: auto; }
+.post .stack-svgs svg + svg { margin-top: 1.4rem; }
+@media (max-width: 600px) {
+  .post .lanes .fig-wide { display: none; }
+  .post .lanes .fig-narrow { display: block; }
+  .post table.stack thead { display: none; }
+  .post table.stack, .post table.stack tbody, .post table.stack tr { display: block; width: 100%; height: auto; }
+  .post table.stack tr { padding: 0.6rem 0.9rem; border-top: 1px solid var(--p-line); }
+  .post table.stack tr:first-child { border-top: 0; }
+  .post table.stack tr.hl { background: var(--p-accent-soft); }
+  .post table.stack th[scope="row"] { display: block; padding: 0 0 0.25rem; border: 0; background: none; white-space: normal; }
+  .post table.stack td { display: flex; gap: 1rem; justify-content: space-between; padding: 0.12rem 0; border: 0; background: none; text-align: right; white-space: normal; }
+  .post table.stack td::before { content: attr(data-label); color: var(--p-muted); font-size: 0.8rem; text-align: left; }
+}
+.post .ch-axis { fill: var(--p-muted); font: 12px var(--p-mono); }
+.post .ch-k8, .post .ch-k4 { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+.post .ch-k8 { stroke: var(--p-layer); }
+.post .ch-k4 { stroke: var(--p-vocab); }
+.post .ch-k8-t { fill: var(--p-layer); font: 700 13px var(--p-sans); }
+.post .ch-k4-t { fill: var(--p-vocab); font: 700 13px var(--p-sans); }
 
 /* Placement bars */
 .post .place { padding: clamp(1.1rem, 3vw, 1.8rem); background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.9rem; }
@@ -325,6 +347,12 @@
 /* Video with transcript */
 .post .video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border-radius: 0.8rem; }
 .post .transcript { color: var(--p-muted); font-size: 0.88rem; }
+.post details.closer { margin-top: 1.4rem; padding: 0.9rem 1.15rem; background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.8rem; }
+.post details.closer > summary { color: var(--p-ink); cursor: pointer; font-size: 1.08rem; font-weight: 650; }
+.post details.closer > summary span { display: block; margin-top: 0.15rem; color: var(--p-muted); font-size: 0.86rem; font-weight: 500; }
+.post details.closer[open] > summary { margin-bottom: 0.8rem; }
+.post details.closer .block { padding-block: 1.1rem 1rem; }
+.post details.closer + .col.prose { padding-top: 1.6rem; }
 .post .transcript summary { color: var(--p-ink); font-weight: 650; cursor: pointer; }
 .post .transcript p { margin: 0.55rem 0 0; line-height: 1.65; }
 

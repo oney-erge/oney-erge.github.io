@@ -54,7 +54,7 @@ function SeriesBar({ post }: { post: WritingPost }) {
   const parts = getSeriesParts(post.seriesId);
   return (
     <nav className={styles.seriesBar} aria-label={`${series.title}, part ${post.part} of ${parts.length}`}>
-      <span className={styles.seriesName}>Series · {series.title}</span>
+      <span className={styles.seriesName}>Part {post.part} of {parts.length} · {series.title}</span>
       <span className={styles.seriesParts}>
         {parts.map((part) => <PartLink key={part.slug} post={part} current={part.slug === post.slug} />)}
       </span>

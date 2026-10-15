@@ -1,28 +1,13 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <p class="kicker">Speculative decoding on small GPUs · Part 2</p>
     <h1>Variants of speculative decoding</h1>
     <p class="deck"><a href="/writing/speculative-decoding-streamed-inference/">Part 1</a> used the simplest form of speculative decoding: a separate small model drafts a fixed number of tokens, and the large model checks them in one pass. Most variants change one of three choices: where the draft comes from, how many tokens to draft, and whether to check one guess or several. This part gives an overview, with my measurements for two of them.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>6 min read</span></div>
   </header>
 
   <div class="col prose">
     <p>Every variant keeps the final step of Part&nbsp;1: the large model, the target model, checks the draft and keeps only the tokens it agrees with. With greedy decoding, the output is therefore the target model's own output in every variant. What changes is how the draft is made, and so how often it is right and what it costs.</p>
-    <p>Table 1 lists the three choices and the main options for each. The sections below take them in order.</p>
-  </div>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 1.</b> The three choices in a speculative decoder.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Choice</th><th scope="col">Fixed speculation in Part&nbsp;1</th><th scope="col">Other options</th></tr></thead>
-        <tbody>
-          <tr><th scope="row" class="wrap">Where the draft comes from</th><td class="wrap">A separate small model, Qwen3-0.6B</td><td class="wrap">The target model's own layers, extra prediction heads, or text already in the prompt</td></tr>
-          <tr><th scope="row" class="wrap">How many tokens to draft</th><td class="wrap">Always 8</td><td class="wrap">Decided again in every round</td></tr>
-          <tr><th scope="row" class="wrap">What is checked</th><td class="wrap">One chain of guesses</td><td class="wrap">A tree of alternative guesses</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <p>The sections below take the three choices in order.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-source">
@@ -44,7 +29,7 @@
   <section class="col prose" aria-labelledby="h-length">
     <h2 id="h-length">How many tokens to draft</h2>
     <p>Fixed speculation drafts the same 8 tokens in every round. When the draft goes wrong early, the rest of it is wasted. Adaptive methods stop drafting when the next draft token is likely to be rejected: SpecDec++ trains a small head that predicts the chance of a rejection, and DISCO uses a small classifier <a class="cite" href="#ref-5">[5]</a>. Both report modest gains over a fixed length, about 7 to 10%.</p>
-    <p>In streamed inference, the trade-off is lopsided. Eq. (2) of Part&nbsp;1 shows why: a wasted draft token costs tens of milliseconds, while one pass of the target model costs seconds. Stopping early saves little, and stopping too early gives up tokens that the pass could have checked almost for free.</p>
+    <p>In streamed inference, the trade-off is lopsided. Eq. (2) of Part&nbsp;1 shows why: a wasted draft token costs tens of milliseconds, while one pass of the target model costs about 20 seconds. Stopping early saves little, and stopping too early gives up tokens that the pass could have checked almost for free.</p>
     <p>My measurements agree. I tested three adaptive policies on Qwen3-14B against a fixed draft length <a class="cite" href="#ref-8">[8]</a>:</p>
     <ol class="procedure">
       <li><span>Policy 1</span><span class="stepbody">A learning policy that adjusts k after each round cut k to 1 after a few rejections and was slower than the fixed draft: 7.7 against 7.2&nbsp;s per token, on one prompt with 16 sampled tokens.</span></li>
@@ -61,7 +46,7 @@
 
   <div class="wide block">
     <figure class="lanes" aria-labelledby="tree-cap">
-      <div class="scroll"><svg viewBox="0 0 800 290" role="img" aria-label="Left, a chain draft whose first token is rejected, so the pass keeps only the target model's own token. Right, a tree draft whose branch Paris, period, It is accepted, so the pass keeps four tokens.">
+      <div class="scroll fig-wide"><svg viewBox="0 0 800 290" role="img" aria-label="Left, a chain draft whose first token is rejected, so the pass keeps only the target model's own token. Right, a tree draft whose branch Paris, period, It is accepted, so the pass keeps four tokens.">
         <text class="tl-title" x="10" y="24">Chain draft</text>
         <rect class="tl-gray" x="10" y="124" width="100" height="34" rx="4"/><text class="tl-in2" x="60" y="146">…France is</text>
         <line class="tl-edge" x1="110" y1="141" x2="130" y2="141"/>
@@ -93,6 +78,7 @@
         <text class="tl-note" x="410" y="236">The pass keeps "Paris . It" and the</text>
         <text class="tl-note" x="410" y="254">target model's next token: 4 tokens.</text>
       </svg></div>
+      <div class="fig-narrow stack-svgs"><svg class="fit" viewBox="0 0 340 152" role="img" aria-label="A chain draft whose first token is rejected, so the pass keeps only the target model's own token."><text class="tl-title" x="0" y="16">Chain draft</text><rect class="tl-gray" x="0" y="44" width="92" height="32" rx="4"/><text class="tl-in2" x="46" y="65">…France is</text><line class="tl-edge" x1="92" y1="60" x2="106" y2="60"/><rect class="tl-rej" x="106" y="44" width="52" height="32" rx="4"/><text class="tl-in2" x="132" y="65">a</text><line class="tl-edge" x1="158" y1="60" x2="170" y2="60"/><rect class="tl-off" x="170" y="44" width="52" height="32" rx="4"/><text class="tl-in2" x="196" y="65">city</text><line class="tl-edge" x1="222" y1="60" x2="234" y2="60"/><rect class="tl-off" x="234" y="44" width="52" height="32" rx="4"/><text class="tl-in2" x="260" y="65">in</text><text class="tl-warn" x="132" y="94">rejected</text><text class="c-text" x="228" y="94" text-anchor="middle">discarded</text><text class="tl-note" x="0" y="124">The pass keeps the target model's own</text><text class="tl-note" x="0" y="142">token, "Paris": 1 token.</text></svg><svg class="fit" viewBox="0 0 340 236" role="img" aria-label="A tree draft whose branch Paris, period, It is accepted, so the pass keeps four tokens."><text class="tl-title" x="0" y="16">Tree draft</text><text class="tl-ok" x="262" y="16">accepted branch</text><rect class="tl-gray" x="0" y="96" width="92" height="32" rx="4"/><text class="tl-in2" x="46" y="117">…France is</text><path class="tl-edge" d="M92 112 C104 112 104 66 116 66"/><path class="tl-edge" d="M92 112 C104 112 104 156 116 156"/><rect class="tl-acc" x="116" y="50" width="60" height="32" rx="4"/><text class="tl-in2" x="146" y="71">Paris</text><rect class="tl-off" x="116" y="140" width="60" height="32" rx="4"/><text class="tl-in2" x="146" y="161">a</text><path class="tl-edge" d="M176 66 C188 66 188 42 200 42"/><path class="tl-edge" d="M176 66 C188 66 188 92 200 92"/><rect class="tl-acc" x="200" y="26" width="50" height="32" rx="4"/><text class="tl-in2" x="225" y="47">.</text><rect class="tl-off" x="200" y="76" width="50" height="32" rx="4"/><text class="tl-in2" x="225" y="97">,</text><line class="tl-edge" x1="250" y1="42" x2="266" y2="42"/><rect class="tl-acc" x="266" y="26" width="54" height="32" rx="4"/><text class="tl-in2" x="293" y="47">It</text><text class="tl-note" x="0" y="206">The pass keeps "Paris . It" and the</text><text class="tl-note" x="0" y="224">target model's next token: 4 tokens.</text></svg></div>
       <figcaption id="tree-cap"><b>Figure 1.</b> One pass of the target model checking a chain draft and a small tree draft, simple example. In the chain, the first draft token is wrong, so the other draft tokens are lost. In the tree, an alternative at each position lets the pass keep the branch the target model agrees with. The tokens are illustrative.</figcaption>
     </figure>
   </div>
@@ -103,11 +89,11 @@
 
   <section class="col prose" aria-labelledby="h-side">
     <h2 id="h-side">The variants side by side</h2>
-    <p>Table 2 places the variants above by their draft source, the training they need, and the extra memory they use. A survey by Xia et al. compares many more <a class="cite" href="#ref-7">[7]</a>.</p>
+    <p>Table 1 places the variants above by their draft source, the training they need, and the extra memory they use. A survey by Xia et al. compares many more <a class="cite" href="#ref-7">[7]</a>.</p>
   </section>
 
   <div class="col block">
-    <p class="tcap"><b>Table 2.</b> Main speculative decoding variants. Every one keeps the target model's check, so with greedy decoding each returns the target model's own output; Medusa also offers a relaxed acceptance rule that gives up this exactness for speed <a class="cite" href="#ref-3">[3]</a>.</p>
+    <p class="tcap"><b>Table 1.</b> Main speculative decoding variants. Every one keeps the target model's check, so with greedy decoding each returns the target model's own output; Medusa also offers a relaxed acceptance rule that gives up this exactness for speed <a class="cite" href="#ref-3">[3]</a>.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Variant</th><th scope="col">Draft source</th><th scope="col">Training needed</th><th scope="col">Extra memory</th></tr></thead>
@@ -132,7 +118,7 @@
       <li>Every variant keeps the target model's check, so the variants differ in speed and cost, not in the output, apart from relaxed acceptance rules such as Medusa's.</li>
       <li>In a short test, drafting from the target model's own early layers did not work without training: the target model accepted none of the draft tokens from the first 4 or 8 layers of Qwen3-14B.</li>
       <li>Adaptive draft length did not beat a fixed 8-token draft in my measurements, because in streamed inference a wasted draft token costs little next to one pass.</li>
-      <li>Tree drafts suit streamed inference, because one pass can check many tokens for about the cost of one.</li>
+      <li>Tree drafts, which I have not measured yet, suit streamed inference, because one pass can check many tokens for about the cost of one; SpecExec reports up to 20 accepted tokens per pass.</li>
     </ol>
     <p>Therefore, for a large model streamed through a small GPU, the simplest form, a separate draft model with a long fixed draft, was the best of the options I tested, and tree drafts are the next variant to test.</p>
     <p>Later parts of this series will build a small speculative decoder step by step and measure its acceptance rate on the same laptop.</p>

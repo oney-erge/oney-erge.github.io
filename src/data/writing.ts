@@ -197,7 +197,7 @@ const allPosts: WritingPost[] = [
     datePublished: "2026-10-14T19:00:00-05:00",
     dateModified: "2026-10-14T19:00:00-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "7 min read",
+    readingTime: "6 min read",
     tags: ["Speculative decoding", "Self-speculation", "Token trees"],
     socialImage: "/media/afterimage-social.png",
     cover: {

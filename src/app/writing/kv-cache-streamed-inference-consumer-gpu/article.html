@@ -1,6 +1,5 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <p class="kicker">Running large language models on small GPUs · Part 2</p>
     <h1>KV cache memory and streamed inference on a consumer GPU</h1>
     <p class="deck">In <a href="/writing/llm-memory-requirements-consumer-gpu/">Part 1</a>, the released weights of Qwen3-14B needed 29.5&nbsp;GB, more than 3 times the memory of my 8&nbsp;GB laptop GPU. The input prompt and the answer need GPU memory too, and that memory grows with every token. This part calculates that memory, called the KV cache, and then measures what happens when the weights are loaded one part at a time.</p>
     <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>9 min read</span></div>
@@ -10,38 +9,41 @@
     <h2 id="h-kv">Memory for the prompt and the answer: the KV cache</h2>
     <p>LLMs generate text one token at a time. After reading the prompt, they produce the first token of the answer, add it to the sequence, and repeat. Each new token depends on the tokens before it.</p>
     <p>The operation that retrieves information from earlier tokens is called attention.</p>
-    <p class="note">The next subsection shows how queries, keys, and values are used in attention. If you already know how attention works, skip ahead to <strong>Storing keys and values instead of recomputing them</strong>.</p>
-
-    <h3>A closer look at attention</h3>
-    <p>Queries, keys, values, and attention are fundamental pieces of the transformer architecture <a class="cite" href="#ref-1">[1]</a>.</p>
-    <p>In each layer, attention computes three short lists of numbers for every token: a query, a key, and a value. The query of the newest token is compared with the keys of the tokens available to it. A stronger match gives a higher score, which causes more of that token's value to contribute to the output.</p>
-    <p>Table 1 works through this for the text “the dog ran.” It scores each available token against the newest one, “ran,” converts those scores into weights, and blends the values into one output for “ran.”</p>
-    <p>For this simplified example, I omit the usual score scaling and the learned projections that produce queries, keys, and values, and show only the part needed to explain the KV cache.</p>
   </section>
 
-  <div class="col block">
-    <p class="tcap"><b>Table 1.</b> A simple attention step for the newest token, “ran,” whose query is [0, 2]. The numbers are illustrative.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Token</th><th scope="col">Key</th><th scope="col">Value</th><th scope="col" class="num">Score, query × key</th><th scope="col" class="num">Weight</th><th scope="col">Contribution, weight × value</th></tr></thead>
-        <tbody>
-          <tr><td>the</td><td class="mono">[1, 0]</td><td class="mono">[0.2, 0.1]</td><td class="num">0</td><td class="num">0.06</td><td class="mono">[0.01, 0.01]</td></tr>
-          <tr><td>dog</td><td class="mono">[0, 1]</td><td class="mono">[0.9, 0.4]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.42, 0.19]</td></tr>
-          <tr><td>ran</td><td class="mono">[1, 1]</td><td class="mono">[0.5, 0.7]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.24, 0.33]</td></tr>
-          <tr class="total"><th scope="row">Blended output for “ran”</th><td></td><td></td><td></td><td></td><td class="mono">[0.67, 0.52]</td></tr>
-        </tbody>
-      </table>
+  <details class="col closer">
+    <summary>A closer look at attention <span>Optional: a worked example of queries, keys, and values</span></summary>
+    <div class="prose">
+      <p>Queries, keys, values, and attention are fundamental pieces of the transformer architecture <a class="cite" href="#ref-1">[1]</a>.</p>
+      <p>In each layer, attention computes three short lists of numbers for every token: a query, a key, and a value. The query of the newest token is compared with the keys of the tokens available to it. A stronger match gives a higher score, which causes more of that token's value to contribute to the output.</p>
+      <p>Table 1 works through this for the text “the dog ran.” It scores each available token against the newest one, “ran,” converts those scores into weights, and blends the values into one output for “ran.”</p>
+      <p>For this simplified example, I omit the usual score scaling and the learned projections that produce queries, keys, and values, and show only the part needed to explain the KV cache.</p>
     </div>
-  </div>
+    <div class="block">
+      <p class="tcap"><b>Table 1.</b> A simple attention step for the newest token, “ran,” whose query is [0, 2]. The numbers are illustrative.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th scope="col">Token</th><th scope="col">Key</th><th scope="col">Value</th><th scope="col" class="num">Score, query × key</th><th scope="col" class="num">Weight</th><th scope="col">Contribution, weight × value</th></tr></thead>
+          <tbody>
+            <tr><td>the</td><td class="mono">[1, 0]</td><td class="mono">[0.2, 0.1]</td><td class="num">0</td><td class="num">0.06</td><td class="mono">[0.01, 0.01]</td></tr>
+            <tr><td>dog</td><td class="mono">[0, 1]</td><td class="mono">[0.9, 0.4]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.42, 0.19]</td></tr>
+            <tr><td>ran</td><td class="mono">[1, 1]</td><td class="mono">[0.5, 0.7]</td><td class="num">2</td><td class="num">0.47</td><td class="mono">[0.24, 0.33]</td></tr>
+            <tr class="total"><th scope="row">Blended output for “ran”</th><td></td><td></td><td></td><td></td><td class="mono">[0.67, 0.52]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="prose">
+      <p>Each score comes from multiplying the query by that token's key, number by number, and adding the results. Softmax then converts the scores into weights that add up to 1. The output is the sum of every token's value multiplied by its weight:</p>
+      <div class="equation" role="group" aria-label="Equation 1">
+        <math display="block"><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mfrac><msup><mi>e</mi><msub><mi>s</mi><mi>i</mi></msub></msup><mrow><msub><mo>&#x2211;</mo><mi>j</mi></msub><msup><mi>e</mi><msub><mi>s</mi><mi>j</mi></msub></msup></mrow></mfrac><mo>,</mo><mspace width="1em"></mspace><mtext>output</mtext><mo>=</mo><munder><mo>&#x2211;</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi>v</mi><mi>i</mi></msub></math>
+        <span class="eqn">(1)</span>
+      </div>
+      <p class="where">where s<sub>i</sub> is the score of token i, w<sub>i</sub> is its weight, and v<sub>i</sub> is its value.</p>
+    </div>
+  </details>
 
   <div class="col prose">
-    <p>Each score comes from multiplying the query by that token's key, number by number, and adding the results. Softmax then converts the scores into weights that add up to 1. The output is the sum of every token's value multiplied by its weight:</p>
-    <div class="equation" role="group" aria-label="Equation 1">
-      <math display="block"><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mfrac><msup><mi>e</mi><msub><mi>s</mi><mi>i</mi></msub></msup><mrow><msub><mo>&#x2211;</mo><mi>j</mi></msub><msup><mi>e</mi><msub><mi>s</mi><mi>j</mi></msub></msup></mrow></mfrac><mo>,</mo><mspace width="1em"></mspace><mtext>output</mtext><mo>=</mo><munder><mo>&#x2211;</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi>v</mi><mi>i</mi></msub></math>
-      <span class="eqn">(1)</span>
-    </div>
-    <p class="where">where s<sub>i</sub> is the score of token i, w<sub>i</sub> is its weight, and v<sub>i</sub> is its value.</p>
-
     <h3>Storing keys and values instead of recomputing them</h3>
     <p>When the model adds the next token, “in,” the keys and values of the earlier tokens do not change.</p>
     <p>Without storing them, the model would have to recompute those values every time another token is generated. Instead, inference software computes them once and keeps them in GPU memory.</p>
@@ -142,7 +144,7 @@
   <section class="col prose" aria-labelledby="h-split">
     <h2 id="h-split">Loading one part of the model at a time</h2>
     <p>The model still does not fit, but the calculation above suggests another option: the GPU does not need every weight at the same time.</p>
-    <p>The weights can stay outside GPU memory, and only the model part currently needed is loaded onto the GPU: load it, use it, release its weight memory, then continue to the next part.</p>
+    <p>The weights can stay outside GPU memory, and only the model part currently needed is loaded onto the GPU: load it, use it, release its weight memory, then continue to the next part. This series calls this <strong>streaming</strong>.</p>
     <p>Inference happens in two stages.</p>
     <p>First, the <strong>prefill</strong> stage processes the input prompt and builds the initial KV cache.</p>
     <p>After that, <strong>decoding</strong> begins. For one generated token, the simplified sequence is:</p>
@@ -160,7 +162,7 @@
 
   <section class="col prose" aria-labelledby="h-measured">
     <h2 id="h-measured">Measured streamed execution</h2>
-    <p>I measured two systems that load weights incrementally: AirLLM 3.2.0 and <strong>Afterimage exact minimum-memory</strong> <a class="cite" href="#ref-3">[3]</a>.</p>
+    <p>I measured two systems that stream the weights: AirLLM 3.2.0 and <strong>Afterimage minimum-memory</strong> <a class="cite" href="#ref-3">[3]</a>.</p>
     <p>Both used the same Qwen3-14B BF16 checkpoint on my RTX 3080 Laptop GPU. The test used 4 prompts and 4 generated tokens per prompt with greedy decoding. Both methods produced the same output tokens.</p>
   </section>
 
@@ -171,7 +173,7 @@
         <thead><tr><th scope="col">Method</th><th scope="col" class="num">Measured PyTorch peak</th><th scope="col" class="num">Request time per generated token</th></tr></thead>
         <tbody>
           <tr><th scope="row">AirLLM 3.2.0</th><td class="num">1.6&nbsp;GB</td><td class="num">27&nbsp;s</td></tr>
-          <tr><th scope="row"><strong>Afterimage exact minimum-memory</strong></th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
+          <tr><th scope="row"><strong>Afterimage minimum-memory</strong></th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
         </tbody>
       </table>
     </div>
@@ -182,11 +184,8 @@
     <p><strong>Request time per generated token</strong> is the total request wall time divided by the four generated tokens. It includes prompt prefill and is therefore not an isolated steady-state decode measurement.</p>
     <p>These results solve the capacity problem, but not the performance problem.</p>
     <p>Both systems run the 29.5&nbsp;GB BF16 model with measured PyTorch peaks below 2&nbsp;GB in this configuration. The measured requests average <strong>27 to 33 seconds of wall time per generated token</strong>.</p>
-    <p>The model is no longer prevented from running because all of its weights cannot fit on the GPU. Instead, execution depends on repeatedly retrieving, preparing, transferring, and executing the weights required by each stage.</p>
-    <p>AirLLM is faster at this operating point. <strong>Afterimage exact minimum-memory</strong> also reconstructs its losslessly stored weights before execution, adding work that <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a> examines.</p>
+    <p>AirLLM is faster at this operating point. <strong>Afterimage minimum-memory</strong> also unpacks its losslessly compressed weights before use, adding work that <a href="/writing/moving-weights-storage-to-gpu/">Part&nbsp;3</a> examines.</p>
     <p>Loading every layer from storage minimizes GPU-memory use, but it treats every weight as equally disposable. In practice, some weights may be worth keeping on the GPU, some may be worth keeping in RAM, and others may be cheap enough to reload.</p>
-    <p><strong>This starts to look like an optimization problem.</strong></p>
-    <p>Given fixed budgets of GPU memory and RAM, the question becomes which weights should stay in each place and which should be read again during execution.</p>
     <p>The best choice may not be determined by weight size alone. It depends on when the weight is needed, how expensive it is to prepare and move, and whether that work delays generation or can overlap with something already running.</p>
     <p>Parts 3 and 4 examine that problem.</p>
   </div>

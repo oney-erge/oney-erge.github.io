@@ -1,6 +1,5 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <p class="kicker">Running large language models on small GPUs · Part 3</p>
     <h1>Moving weights from storage to the GPU during streamed inference</h1>
     <p class="deck">In <a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Part 2</a>, loading Qwen3-14B one part at a time made the 29.5&nbsp;GB model fit in under 2&nbsp;GB of GPU memory, but each generated token took 27 to 33 seconds. This part follows one weight from the SSD to the GPU, to show where that time goes and when it actually delays the next token.</p>
     <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>7 min read</span></div>
@@ -42,31 +41,15 @@
       <span class="eqn">(1)</span>
     </div>
     <p class="where">where S<sub>disk</sub> is the number of bytes stored on the SSD, b<sub>disk</sub> is the read speed, t<sub>unpack</sub> is the unpacking time (zero for a weight stored uncompressed), S is the size of the unpacked weight, and b<sub>PCIe</sub> is the copy speed.</p>
-    <p>Table 1 applies Eq. (1) to uncompressed weights with the speeds in Figure 1.</p>
-  </section>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 1.</b> Reading and copying time for Qwen3-14B weights stored uncompressed, calculated from the speeds in Figure 1. These are lower bounds: the PCIe value is the specification maximum.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Step</th><th scope="col" class="num">One decoder layer, 0.66&nbsp;GB</th><th scope="col" class="num">Whole model, 29.5&nbsp;GB</th></tr></thead>
-        <tbody>
-          <tr><th scope="row" class="wrap">Read from the SSD at 2.3&nbsp;GB/s</th><td class="num">0.29&nbsp;s</td><td class="num">13&nbsp;s</td></tr>
-          <tr><th scope="row" class="wrap">Copy over PCIe at 32&nbsp;GB/s</th><td class="num">0.02&nbsp;s</td><td class="num">0.9&nbsp;s</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col prose">
-    <p>Reading dominates. The copy over PCIe, which is often blamed for slow offloading, is more than 10 times faster than the cold read here.</p>
+    <p>For a weight stored uncompressed, the speeds in Figure 1 give lower bounds, because the PCIe value is the specification maximum. Reading one 0.66&nbsp;GB decoder layer from the SSD takes about 0.29&nbsp;s, and copying it over PCIe about 0.02&nbsp;s. For the whole 29.5&nbsp;GB model, that is about 13&nbsp;s of reading and under 1&nbsp;s of copying.</p>
+    <p>Reading dominates. The copy over PCIe, which is often blamed for slow streaming, is more than 10 times faster than the cold read here.</p>
     <p>Reading the whole model once takes about 13&nbsp;seconds, close to half of the 27&nbsp;seconds per token that AirLLM measured in Part&nbsp;2. The measured time also includes processing the input prompt, the computation, and the software work around each step.</p>
-  </div>
+  </section>
 
   <section class="col prose" aria-labelledby="h-compress">
     <h2 id="h-compress">Lossless compression: fewer bytes to read, more work to unpack</h2>
     <p>If reading dominates, reading fewer bytes should help.</p>
-    <p>Afterimage, the engine this series builds toward, stores the weights compressed without loss <a class="cite" href="#ref-7">[7]</a>. A BF16 number has 1 sign bit, 8 exponent bits, and 7 mantissa bits. Only a few exponent values are common, so Afterimage re-encodes the exponent with a Huffman code, which gives frequent values shorter codes <a class="cite" href="#ref-2">[2]</a>, the same idea as DFloat11 <a class="cite" href="#ref-3">[3]</a>. Unpacking restores exactly the released bits.</p>
+    <p>Afterimage stores the weights compressed without loss <a class="cite" href="#ref-7">[7]</a>. A BF16 number has 1 sign bit, 8 exponent bits, and 7 mantissa bits. Only a few exponent values are common, so Afterimage re-encodes the exponent with a Huffman code, which gives frequent values shorter codes <a class="cite" href="#ref-2">[2]</a>, the same idea as DFloat11 <a class="cite" href="#ref-3">[3]</a>. Unpacking restores exactly the released bits.</p>
     <p>For Qwen3-14B, this shrinks the stored weights from 29.5&nbsp;GB to <strong>20.3&nbsp;GB</strong>, 1.45 times smaller. At 2.3&nbsp;GB/s, that saves about 4&nbsp;seconds of reading per pass through the model.</p>
     <p>The saving is not free. Every compressed weight must be unpacked before use, which adds t<sub>unpack</sub> to Eq. (1). Compression shortens the time to a ready weight only when</p>
     <div class="equation" role="group" aria-label="Equation 2">
@@ -74,7 +57,7 @@
       <span class="eqn">(2)</span>
     </div>
     <p class="where">that is, when the reading time it saves is longer than the unpacking time it adds.</p>
-    <p>In my measurements, it was not. At the minimum-memory point, Afterimage with compression alone took 33&nbsp;seconds per token against AirLLM's 27 (Part&nbsp;2, Table&nbsp;2): the reading time it saved was spent on unpacking.</p>
+    <p>In my measurements, it was not. At the minimum-memory point, Afterimage minimum-memory, which uses compression but keeps no weights close, took 33&nbsp;seconds per token against AirLLM's 27 (Part&nbsp;2, Table&nbsp;2): the reading time it saved was spent on unpacking.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-overlap">
@@ -85,7 +68,7 @@
 
   <div class="wide block">
     <figure class="lanes" aria-labelledby="lanes-cap">
-      <div class="scroll"><svg viewBox="0 0 760 196" role="img" aria-label="Timeline: the GPU computes layers 1 to 4 while the next layer loads. Loads of layers 2 and 3 finish in time; the load of layer 4 takes longer and the GPU waits before layer 4.">
+      <div class="scroll fig-wide"><svg viewBox="0 0 760 196" role="img" aria-label="Timeline: the GPU computes layers 1 to 4 while the next layer loads. Loads of layers 2 and 3 finish in time; the load of layer 4 takes longer and the GPU waits before layer 4.">
         <defs><pattern id="wait-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="tl-wait-bg"/><rect width="3" height="8" class="tl-wait-fg"/></pattern></defs>
         <text class="c-label" x="0" y="52">GPU</text>
         <text class="c-label" x="0" y="122">Loading</text>
@@ -100,6 +83,7 @@
         <text class="tl-ok" x="142" y="152">hidden</text><text class="tl-ok" x="268" y="152">hidden</text><text class="tl-warn" x="446" y="152">not ready in time</text>
         <line class="c-grid" x1="96" y1="176" x2="740" y2="176"/><text class="c-text" x="740" y="192" text-anchor="end">time</text>
       </svg></div>
+      <svg class="fig-narrow fit" viewBox="0 0 340 182" role="img" aria-label="Timeline: the GPU computes layers 1 to 4 while the next layer loads. Loads of layers 2 and 3 finish in time; the load of layer 4 takes longer and the GPU waits before layer 4."><defs><pattern id="wait-hatch-n" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="tl-wait-bg"/><rect width="3" height="8" class="tl-wait-fg"/></pattern></defs><text class="c-label" x="0" y="14">GPU</text><rect class="tl-compute" x="0.0" y="22" width="70.3" height="32" rx="4"/><text class="tl-in" x="35.2" y="43">layer 1</text><rect class="tl-compute" x="72.7" y="22" width="70.3" height="32" rx="4"/><text class="tl-in" x="107.8" y="43">layer 2</text><rect class="tl-compute" x="145.3" y="22" width="70.3" height="32" rx="4"/><text class="tl-in" x="180.5" y="43">layer 3</text><rect class="tl-compute" x="267.2" y="22" width="70.3" height="32" rx="4"/><text class="tl-in" x="302.4" y="43">layer 4</text><rect x="218.0" y="22" width="46.9" height="32" rx="4" fill="url(#wait-hatch-n)"/><text class="tl-warn" x="241.4" y="14">GPU waits</text><text class="c-label" x="0" y="84">Loading</text><rect class="tl-load" x="0.0" y="92" width="53.9" height="26" rx="4"/><text class="tl-in2" x="27.0" y="109">load 2</text><rect class="tl-load" x="72.7" y="92" width="56.3" height="26" rx="4"/><text class="tl-in2" x="100.8" y="109">load 3</text><rect class="tl-load slow" x="145.3" y="92" width="119.5" height="26" rx="4"/><text class="tl-in2" x="205.1" y="109">load 4</text><text class="tl-ok" x="27.0" y="136">hidden</text><text class="tl-ok" x="100.8" y="136">hidden</text><text class="tl-warn" x="205.1" y="136">not ready in time</text><line class="c-grid" x1="0" y1="160" x2="340" y2="160"/><text class="c-text" x="340" y="176" text-anchor="end">time</text></svg>
       <figcaption id="lanes-cap"><b>Figure 2.</b> Loading while computing, simplified. Each layer is loaded while the GPU computes the layer before it. Loading that finishes in time is hidden; loading that does not makes the GPU wait. The durations are illustrative.</figcaption>
     </figure>
   </div>
@@ -110,18 +94,18 @@
 
   <section class="col prose" aria-labelledby="h-close">
     <h2 id="h-close">Keeping some weights close</h2>
-    <p>The remaining option is to stop moving some weights at all. With spare GPU memory, some weights can stay there permanently. With spare RAM, others can stay there unpacked and skip the read and unpack steps. Table 2 compares measured operating points on my laptop.</p>
+    <p>The remaining option is to stop moving some weights at all. With spare GPU memory, some weights can stay there permanently. With spare RAM, others can stay there unpacked and skip the read and unpack steps. Table 1 compares measured operating points on my laptop.</p>
   </section>
 
   <div class="col block">
-    <p class="tcap"><b>Table 2.</b> Measured operating points for Qwen3-14B BF16 on the RTX 3080 Laptop GPU: 4 prompts, 4 generated tokens each, greedy decoding, cold page cache. Every method produced the same output tokens. Source: Afterimage results <a class="cite" href="#ref-7">[7]</a>.</p>
+    <p class="tcap"><b>Table 1.</b> Measured operating points for Qwen3-14B BF16 on the RTX 3080 Laptop GPU: 4 prompts, 4 generated tokens each, greedy decoding, cold page cache. Every method produced the same output tokens. Source: Afterimage results <a class="cite" href="#ref-7">[7]</a>.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Method</th><th scope="col" class="num">Measured PyTorch peak</th><th scope="col" class="num">Request time per generated token</th></tr></thead>
         <tbody>
           <tr><th scope="row" class="wrap">AirLLM 3.2.0, one layer at a time <a class="cite" href="#ref-6">[6]</a></th><td class="num">1.6&nbsp;GB</td><td class="num">27&nbsp;s</td></tr>
-          <tr><th scope="row" class="wrap">Afterimage, compressed, minimum memory</th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
-          <tr class="hl"><th scope="row" class="wrap">Afterimage, compressed, 4&nbsp;GB of weights kept on the GPU</th><td class="num">3.9&nbsp;GB</td><td class="num">17&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Afterimage minimum-memory</th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
+          <tr class="hl"><th scope="row" class="wrap">Afterimage 4&nbsp;GB plan, weights kept on the GPU</th><td class="num">3.9&nbsp;GB</td><td class="num">17&nbsp;s</td></tr>
           <tr><th scope="row" class="wrap">Hugging Face Accelerate, weights on GPU, RAM, and SSD <a class="cite" href="#ref-5">[5]</a></th><td class="num">3.8&nbsp;GB</td><td class="num">14&nbsp;s</td></tr>
         </tbody>
       </table>
