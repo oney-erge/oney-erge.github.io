@@ -378,20 +378,24 @@ export default function Home() {
           <a className={styles.textLink} href={GITHUB} target="_blank" rel="noreferrer">More on GitHub <Arrow /></a>
         </section>
 
-        <section className={styles.section} id="writing" aria-labelledby="writing-heading">
+        <section className={`${styles.section} ${styles.writing}`} id="writing" aria-labelledby="writing-heading">
           <header className={styles.sectionHeader}>
             <h2 id="writing-heading">Writing</h2>
-            <p>I run models that are too large for a small GPU, then measure what makes them fit and what makes them faster.</p>
+            <p>Notes on LLM inference, memory use, and performance.</p>
           </header>
           <div className={styles.writingColumns}>
             {writingSeries.map((series) => (
-              <WritingSeriesList key={series.id} series={series} parts={getSeriesParts(series.id)} />
+              <WritingSeriesList
+                key={series.id}
+                series={series}
+                parts={getSeriesParts(series.id)}
+              />
             ))}
           </div>
           <Link className={styles.textLink} href="/writing/">All writing <Arrow /></Link>
         </section>
 
-        <section className={styles.section} id="background" aria-labelledby="background-heading">
+        <section className={`${styles.section} ${styles.experience}`} id="background" aria-labelledby="background-heading">
           <header className={styles.sectionHeader}>
             <h2 id="background-heading">Experience</h2>
           </header>
@@ -422,7 +426,7 @@ export default function Home() {
           </ol>
         </section>
 
-        <section className={styles.section} id="research" aria-labelledby="research-heading">
+        <section className={`${styles.section} ${styles.research}`} id="research" aria-labelledby="research-heading">
           <header className={styles.sectionHeader}>
             <h2 id="research-heading">Research</h2>
           </header>

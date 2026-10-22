@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run check:writing",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check:seo": "node scripts/check-seo.mjs",
+    "check:writing": "node scripts/check-writing.mjs",
     "indexnow": "node scripts/submit-indexnow.mjs"
   },
   "dependencies": {

@@ -1,8 +1,8 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Which weights should stay near the GPU?</h1>
-    <p class="deck">H6.5 replays a recorded request to choose where each weight tensor should live: SSD, RAM, or GPU memory. In its main Llama-3.3-70B test, it lowered both peak GPU memory and request time against simpler rules, without changing the weights.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>6 min read</span><span>1 min video</span></div>
+    <h1>How H6.5 Optimizes Weight Placement</h1>
+    <p class="deck">H6.5 chooses where to keep model weights so the GPU spends less time waiting for them. The weights themselves remain unchanged.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>5 min read</span><span>1 min video</span></div>
   </header>
 
   <div class="wide block">
@@ -11,7 +11,7 @@
         <source src="/media/h65-explainer-1min.mp4" type="video/mp4">
         <a href="/media/h65-explainer-1min.mp4">Download the 1-minute video (MP4, 6 MB)</a>
       </video>
-      <figcaption id="video-cap"><b>One-minute video.</b> A quick overview of the paper, narrated with captions. I used Claude Code to create it from the paper&apos;s content. A longer <a href="/media/h65-explainer-3min.mp4">3-minute version</a> is also available.</figcaption>
+      <figcaption id="video-cap"><b>Video overview.</b> I used Claude Code to create this video from the paper. <a href="/media/h65-explainer-3min.mp4">Longer version (3 min)</a>.</figcaption>
       <details class="transcript">
         <summary>Transcript</summary>
         <p>Llama-3.3-70B needs 141 GB of weights. An RTX 5090 has 32 GB.</p>
@@ -27,19 +27,18 @@
   </div>
 
   <div class="col prose">
-    <p>The paper's main experiment runs Llama-3.3-70B, whose BF16 weights need about 141&nbsp;GB, on an NVIDIA RTX 5090 with 32&nbsp;GB of memory <a class="cite" href="#ref-1">[1]</a>. The same method also chose a different placement on my laptop; the code and evidence are in Afterimage <a class="cite" href="#ref-2">[2]</a>.</p>
+    <p>Llama-3.3-70B needs about 141&nbsp;GB for its BF16 weights. My paper tests how to place them across storage, RAM, and GPU memory on a 32&nbsp;GB RTX 5090 <a class="cite" href="#ref-1">[1]</a>. The implementation and results are in Afterimage <a class="cite" href="#ref-2">[2]</a>.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-decision">
-    <h2 id="h-decision">The placement decision</h2>
-    <p>Each weight tensor, a named array such as one layer&apos;s attention matrix, can be compressed or uncompressed on the SSD, unpacked in RAM, or unpacked in GPU memory. A nearer state needs less preparation each request (Guide&nbsp;3), but uses limited RAM or GPU memory.</p>
-    <p>In the main experiment, 5.2&nbsp;GB of the 8&nbsp;GB GPU budget may hold weights; the rest stays free for temporary work. The RAM budget is 16&nbsp;GB. Llama-3.3-70B has 723 tensors with several possible states each, too many placements to test live. H6.5 seeks the one that finishes the request soonest without changing any weight.</p>
+    <h2 id="h-decision">What H6.5 optimizes</h2>
+    <p>Each weight tensor, such as an attention matrix, can stay compressed or uncompressed on the SSD, unpacked in RAM, or unpacked on the GPU. H6.5 searches for a placement that reduces request time within fixed memory budgets. The model still computes its layers in order.</p>
+    <p>The main experiment allows 8&nbsp;GB of GPU memory, including 5.2&nbsp;GB for persistent weights, and 16&nbsp;GB of RAM. With 723 tensors, testing every possible placement live is impractical.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-payoff">
-    <h2 id="h-payoff">Same size, different payoff</h2>
-    <p>The main comparison is the data-movement rule from Guide&nbsp;3: it fills memory with the tensors that save the most data movement per byte. Similar offloading systems use sizes, bandwidths, or fixed rules <a class="cite" href="#ref-3">[3]</a> <a class="cite" href="#ref-4">[4]</a>.</p>
-    <p>But moved data is not the same as lost time: loading that finishes while the GPU computes is hidden. Only a late load delays the answer. Figure&nbsp;1 shows the simplest case.</p>
+    <h2 id="h-payoff">Why timing matters</h2>
+    <p>A data-movement rule favors tensors that save the most transfer bytes per byte of memory. Offloading systems such as FlexGen and Accelerate also consider memory capacity and data movement <a class="cite" href="#ref-3">[3]</a> <a class="cite" href="#ref-4">[4]</a>. H6.5 considers when those transfers occur: loading that overlaps computation may add no delay, while a late load makes the GPU wait (Figure&nbsp;1).</p>
   </section>
 
   <div class="wide block">
@@ -82,13 +81,12 @@
         <text class="c-text" x="190" y="229" text-anchor="middle">0</text><text class="c-text" x="314" y="229" text-anchor="middle">2 s</text><text class="c-text" x="438" y="229" text-anchor="middle">4 s</text><text class="c-text" x="562" y="229" text-anchor="middle">6 s</text><text class="c-text" x="686" y="229" text-anchor="middle">8 s</text>
       </svg></div>
       <svg class="fig-narrow fit" viewBox="0 0 340 272" role="img" aria-label="Three timelines. As placed and with the blue layer kept on the GPU, the GPU waits 2 seconds and finishes at 8 seconds. With the orange layer kept on the GPU, there is no wait and it finishes at 6 seconds."><defs><pattern id="wait-hatch-4n" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="tl-wait-bg"/><rect width="3" height="8" class="tl-wait-fg"/></pattern></defs><rect class="tl-blue" x="0" y="2" width="12" height="12" rx="2"/><text class="c-text" x="17" y="12">blue: in RAM</text><rect class="tl-orange" x="104" y="2" width="12" height="12" rx="2"/><text class="c-text" x="121" y="12">orange: on the SSD</text><rect x="248" y="2" width="12" height="12" rx="2" fill="url(#wait-hatch-4n)"/><text class="c-text" x="265" y="12">GPU waits</text><text class="tl-row" x="0" y="44">As placed</text><text class="tl-note" x="340" y="44" text-anchor="end">8 s</text><rect class="tl-gray" x="0.0" y="54" width="39.7" height="30" rx="3"/><text class="tl-in2" x="20.6" y="74">1</text><rect class="tl-gray" x="41.2" y="54" width="39.8" height="30" rx="3"/><text class="tl-in2" x="61.9" y="74">2</text><rect class="tl-blue" x="82.5" y="54" width="39.8" height="30" rx="3"/><rect class="tl-gray" x="123.8" y="54" width="39.7" height="30" rx="3"/><text class="tl-in2" x="144.4" y="74">4</text><rect x="165.0" y="54" width="81.0" height="30" rx="3" fill="url(#wait-hatch-4n)"/><rect class="tl-orange" x="247.5" y="54" width="39.8" height="30" rx="3"/><rect class="tl-gray" x="288.8" y="54" width="39.7" height="30" rx="3"/><text class="tl-in2" x="309.4" y="74">6</text><line class="tl-done" x1="330.0" y1="50" x2="330.0" y2="88"/><text class="tl-row" x="0" y="112">Blue kept on the GPU</text><text class="tl-note" x="340" y="112" text-anchor="end">8 s, no change</text><rect class="tl-gray" x="0.0" y="122" width="39.7" height="30" rx="3"/><text class="tl-in2" x="20.6" y="142">1</text><rect class="tl-gray" x="41.2" y="122" width="39.8" height="30" rx="3"/><text class="tl-in2" x="61.9" y="142">2</text><rect class="tl-blue" x="82.5" y="122" width="39.8" height="30" rx="3"/><rect class="tl-gray" x="123.8" y="122" width="39.7" height="30" rx="3"/><text class="tl-in2" x="144.4" y="142">4</text><rect x="165.0" y="122" width="81.0" height="30" rx="3" fill="url(#wait-hatch-4n)"/><rect class="tl-orange" x="247.5" y="122" width="39.8" height="30" rx="3"/><rect class="tl-gray" x="288.8" y="122" width="39.7" height="30" rx="3"/><text class="tl-in2" x="309.4" y="142">6</text><line class="tl-done" x1="330.0" y1="118" x2="330.0" y2="156"/><text class="tl-row" x="0" y="180">Orange kept on the GPU</text><text class="tl-note" x="340" y="180" text-anchor="end">6 s, 2 s sooner</text><rect class="tl-gray" x="0.0" y="190" width="39.7" height="30" rx="3"/><text class="tl-in2" x="20.6" y="210">1</text><rect class="tl-gray" x="41.2" y="190" width="39.8" height="30" rx="3"/><text class="tl-in2" x="61.9" y="210">2</text><rect class="tl-blue" x="82.5" y="190" width="39.8" height="30" rx="3"/><rect class="tl-gray" x="123.8" y="190" width="39.7" height="30" rx="3"/><text class="tl-in2" x="144.4" y="210">4</text><rect class="tl-orange" x="165.0" y="190" width="39.7" height="30" rx="3"/><rect class="tl-gray" x="206.2" y="190" width="39.8" height="30" rx="3"/><text class="tl-in2" x="226.8" y="210">6</text><line class="tl-done" x1="247.5" y1="186" x2="247.5" y2="224"/><line class="c-grid" x1="0" y1="242" x2="340" y2="242"/><text class="c-text" x="0.0" y="258" text-anchor="start">0</text><text class="c-text" x="82.5" y="258" text-anchor="middle">2 s</text><text class="c-text" x="165.0" y="258" text-anchor="middle">4 s</text><text class="c-text" x="247.5" y="258" text-anchor="middle">6 s</text><text class="c-text" x="330.0" y="258" text-anchor="end">8 s</text></svg>
-      <figcaption id="same-cap"><b>Figure 1.</b> GPU timelines for two layers of the same size, simplified. The blue layer is in RAM, and its copy finishes while the GPU is still computing. The orange layer is on the SSD and arrives 2&nbsp;s late. Keeping the blue layer on the GPU changes nothing; keeping the orange one ends the request 2&nbsp;s sooner. The durations are illustrative.</figcaption>
+      <figcaption id="same-cap"><b>Figure 1.</b> An illustrative example with equal-size layers. Keeping the blue layer on the GPU saves no time because its loading overlaps computation. Keeping the orange layer removes a 2&nbsp;s wait.</figcaption>
     </figure>
   </div>
 
   <div class="col prose">
-    <p>A rule based on bytes cannot tell these two layers apart, because they are the same size. In the real model the difference is just as concrete.</p>
-    <p>In one recorded request with the data-movement placement, the output head, the 2.1&nbsp;GB final layer that scores the next token (Guide&nbsp;1), was stored compressed on the SSD. It was read only after the last decoder layer had finished, which took 1.25&nbsp;s, and then unpacked, which took another 0.31&nbsp;s. Nothing was left to compute in the meantime, so the GPU waited <strong>1.56&nbsp;s</strong> (Figure 2).</p>
+    <p>In a recorded Llama request, the data-movement placement left the 2.1&nbsp;GB output head compressed on the SSD. Reading and unpacking it after the last decoder layer made the GPU wait <strong>1.56&nbsp;s</strong> (Figure&nbsp;2).</p>
   </div>
 
   <div class="wide block">
@@ -110,29 +108,29 @@
         <text class="c-text" x="150" y="242" text-anchor="middle">−2 s</text><text class="c-text" x="245" y="242" text-anchor="middle">−1 s</text><text class="c-text" x="340" y="242" text-anchor="middle">0</text><text class="c-text" x="435" y="242" text-anchor="middle">+1 s</text><text class="c-text" x="530" y="242" text-anchor="middle">+2 s</text>
       </svg></div>
       <svg class="fig-narrow fit" viewBox="0 0 340 262" role="img" aria-label="End of one recorded request. With the data-movement placement, the output head is read for 1.25 seconds and unpacked for 0.31 seconds after the last layer, and the GPU is idle for 1.56 seconds. Replayed with the head on the GPU, the request finishes 1.56 seconds earlier."><defs><pattern id="wait-hatch-4m" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="tl-wait-bg"/><rect width="3" height="8" class="tl-wait-fg"/></pattern></defs><line class="c-grid" x1="170" y1="22" x2="170" y2="232" stroke-dasharray="4 4"/><text class="tl-row" x="0" y="14">GPU, data-movement rule</text><text class="tl-warn" x="296" y="14">idle 1.56 s</text><rect class="tl-tick" x="14.0" y="22" width="5" height="30"/><rect class="tl-tick" x="48.4" y="22" width="5" height="30"/><rect class="tl-tick" x="80.4" y="22" width="5" height="30"/><rect class="tl-tick" x="111.6" y="22" width="5" height="30"/><rect class="tl-tick" x="140.4" y="22" width="5" height="30"/><rect class="tl-tick" x="164.4" y="22" width="5" height="30"/><rect x="171" y="22" width="123.8" height="30" rx="3" fill="url(#wait-hatch-4m)"/><rect class="tl-head" x="294.8" y="22" width="5" height="30"/><line class="tl-done" x1="301.8" y1="18" x2="301.8" y2="56"/><text class="tl-row" x="0" y="86">Output head</text><rect class="tl-head" x="170" y="94" width="100.0" height="26" rx="3"/><text class="tl-in" x="220.0" y="112">read 1.25 s</text><rect class="tl-head-soft" x="270.0" y="94" width="24.8" height="26" rx="3"/><text class="tl-note" x="340" y="138" text-anchor="end">unpack 0.31 s</text><text class="c-text" x="164" y="160" text-anchor="end">last layer done</text><text class="tl-row" x="0" y="184">GPU, head kept (replay)</text><rect class="tl-tick" x="14.0" y="192" width="5" height="30"/><rect class="tl-tick" x="48.4" y="192" width="5" height="30"/><rect class="tl-tick" x="80.4" y="192" width="5" height="30"/><rect class="tl-tick" x="111.6" y="192" width="5" height="30"/><rect class="tl-tick" x="140.4" y="192" width="5" height="30"/><rect class="tl-tick" x="164.4" y="192" width="5" height="30"/><rect class="tl-head" x="171" y="192" width="5" height="30"/><line class="tl-done" x1="178" y1="188" x2="178" y2="226"/><text class="tl-note" x="184" y="212">done, 1.56 s earlier</text><line class="c-grid" x1="10" y1="238" x2="330" y2="238"/><text class="c-text" x="10" y="254" text-anchor="start">−2 s</text><text class="c-text" x="90" y="254" text-anchor="middle">−1 s</text><text class="c-text" x="170" y="254" text-anchor="middle">0</text><text class="c-text" x="250" y="254" text-anchor="middle">+1 s</text><text class="c-text" x="330" y="254" text-anchor="end">+2 s</text></svg>
-      <figcaption id="head-cap"><b>Figure 2.</b> The end of one recorded Llama-3.3-70B request on the RTX 5090, simplified from Figure 2 of the paper <a class="cite" href="#ref-1">[1]</a>. Dark marks are GPU computation. With the data-movement placement, the GPU waits 1.56&nbsp;s for the output head. Replaying the same recording with the head kept on the GPU ends 1.56&nbsp;s earlier; that line is a replay prediction, not a separate measurement.</figcaption>
+      <figcaption id="head-cap"><b>Figure 2.</b> End of a recorded Llama-3.3-70B request on the RTX 5090 <a class="cite" href="#ref-1">[1]</a>. Dark marks show GPU computation. The lower timeline predicts the effect of keeping the head on the GPU; it is a replay, not a separate measurement.</figcaption>
     </figure>
   </div>
 
   <div class="col prose">
-    <p>Keeping the output head on the GPU explains this Llama example. <strong>It is not the rule H6.5 applies.</strong> H6.5 scores whole placements, and on my laptop it kept the output weights in RAM and rearranged other tensors instead. Whether moving a tensor helps depends on what else is happening when that tensor is needed, and the recording contains all of it.</p>
+    <p>H6.5 evaluates whole placements rather than always pinning the output head. In laptop tests, it kept the head in RAM and rearranged attention and feed-forward tensors instead.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-replay">
-    <h2 id="h-replay">Replaying a recorded request</h2>
-    <p>H6.5 starts by running one real request and recording every read, unpack, copy, and computation, together with what had to wait for what. This record is a dependency graph: each event starts only after the events it depends on have finished.</p>
-    <p>To score a candidate placement, H6.5 replaces the preparation times of the tensors it moves with the times measured for their new states, and replays the graph:</p>
+    <h2 id="h-replay">How the search works</h2>
+    <p>H6.5 records reads, unpacking, copies, and computation in real requests, including which events must finish before others can start. It then estimates alternative placements by substituting measured preparation times and replaying those dependencies:</p>
     <div class="equation" role="group" aria-label="Equation 1">
       <math display="block"><msub><mi>c</mi><mi>j</mi></msub><mo>=</mo><msub><mi>d</mi><mi>j</mi></msub><mo>+</mo><munder><mo movablelimits="false">max</mo><mrow><mi>k</mi><mo>&#x2208;</mo><mtext>pred</mtext><mo stretchy="false">(</mo><mi>j</mi><mo stretchy="false">)</mo></mrow></munder><msub><mi>c</mi><mi>k</mi></msub><mo>,</mo><mspace width="1.2em"></mspace><mover><mi>T</mi><mo>&#x5E;</mo></mover><mo>=</mo><munder><mo movablelimits="false">max</mo><mi>j</mi></munder><msub><mi>c</mi><mi>j</mi></msub></math>
       <span class="eqn">(1)</span>
     </div>
-    <p class="where">where d<sub>j</sub> is the duration of event j under the candidate placement, pred(j) are the events it waits for, c<sub>j</sub> is the time it completes, and T̂ is the predicted finish time of the request.</p>
-    <p>The search starts from several reasonable placements, including the data-movement rule's, improves them step by step, and keeps the one with the lowest predicted finish time, with a penalty when the prediction varies between recorded requests. For Llama-3.3-70B, it scored <strong>1,817 complete placements in about 3.4&nbsp;seconds</strong>. The whole preparation, mostly recording and measuring, took about 9 minutes, and is repeated only for a new model, machine, workload, or budget. The chosen placement is checked on a recording it was not chosen with, frozen, and then tested on new, live requests.</p>
+    <p class="where">Each event finishes at c<sub>j</sub>: its duration d<sub>j</sub> plus the latest finish among its predecessors, pred(j). The last event determines the predicted request time T̂.</p>
+    <p>The search improves several feasible starting placements step by step, using a replay score that penalizes unstable predictions. The selected placement is frozen before live tests on new requests.</p>
+    <p>Preparing this Llama placement took about <strong>9 minutes</strong>, including <strong>3.4&nbsp;s to score 1,817 placements</strong>. This is a setup cost, not an extra cost per request. Preparation is repeated when changes to the model, hardware, workload, or budget require a new placement.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-changed">
     <h2 id="h-changed">What the placement changed</h2>
-    <p>With the same budgets, H6.5 placed <strong>198 of the 723 tensors</strong> differently from the data-movement rule. It moved 191 tensors from the GPU to the SSD, 82 of them stored uncompressed so that they skip unpacking, and used the freed space mainly for the 2.1&nbsp;GB output head (Figure 3). Both placements keep almost the same amount of weights on the GPU and in RAM, and are predicted to read about the same 78&nbsp;GB from the SSD per pass.</p>
+    <p>H6.5 changed the placement of <strong>198 of 723 tensors</strong>, freeing GPU space for the output head (Figure&nbsp;3). Both plans are predicted to read about 78&nbsp;GB from storage per pass; their timing differs.</p>
   </section>
 
   <div class="wide block">
@@ -144,19 +142,19 @@
         <div><dt>Moved from GPU to SSD</dt><dd>191</dd></div>
         <div><dt>Of those, uncompressed</dt><dd>82</dd></div>
       </dl>
-      <figcaption id="place-cap"><b>Figure 3.</b> Weights kept in GPU memory by the two placements for Llama-3.3-70B on the RTX 5090, with the same budgets. Counts from the frozen placement files <a class="cite" href="#ref-2">[2]</a>.</figcaption>
+      <figcaption id="place-cap"><b>Figure 3.</b> GPU-resident Llama weights under the same budgets. Counts come from the frozen placement files <a class="cite" href="#ref-2">[2]</a>.</figcaption>
     </figure>
   </div>
 
   <section class="col prose" aria-labelledby="h-results">
     <h2 id="h-results">Measured results</h2>
-    <p>Table 1 compares H6.5 with the data-movement rule and with a time-saving rule, which ranks tensors by the preparation time each one saves per byte, measured one tensor at a time. The paper calls these the traffic control and the greedy control.</p>
+    <p>Table&nbsp;1 compares H6.5 with the data-movement rule (traffic control) and a rule ranking each tensor by preparation time saved per byte of memory (greedy control).</p>
   </section>
 
-  <div class="col block">
-    <p class="tcap"><b>Table 1.</b> Measured one-token requests, H6.5 against two simpler rules with the same engine and budgets <a class="cite" href="#ref-1">[1]</a>. Peak extra GPU memory is the highest GPU use during the run above the level before it. Request time includes processing the input prompt; for Qwen3-14B, the difference was within run-to-run variation. A round is one set of matched requests that every method runs, in random order. Every weight was exactly as released.</p>
+  <div class="table-block block">
+    <p class="tcap"><b>Table 1.</b> H6.5 against two placement rules, using one-token requests with the same engine and budgets <a class="cite" href="#ref-1">[1]</a>.</p>
     <div class="tablewrap">
-      <table class="stack">
+      <table class="responsive-table">
         <thead><tr><th scope="col">Compared with</th><th scope="col">Model, GPU</th><th scope="col" class="num">Peak extra GPU memory</th><th scope="col" class="num">Request time</th></tr></thead>
         <tbody>
           <tr class="hl"><th scope="row" class="wrap">Data-movement rule, 20 rounds</th><td data-label="Model, GPU">Llama 70B, RTX 5090</td><td data-label="Peak extra GPU memory" class="num">23% lower, in all 20</td><td data-label="Request time" class="num">13% lower</td></tr>
@@ -166,26 +164,22 @@
         </tbody>
       </table>
     </div>
+    <p class="table-note">Peak extra GPU memory is measured above pre-run use. Request time includes prompt processing. Rounds use matched requests in random method order, preserving the released weights. Qwen&apos;s latency difference was within run-to-run variation.</p>
   </div>
 
   <div class="col prose">
-    <p>The memory result is the most consistent: peak extra GPU memory was lower in every one of the 20 matched Llama requests. Most of the difference is the output head. The data-movement placement must make temporary room of about 2.1&nbsp;GB to rebuild it at the end of each request, while H6.5 keeps it ready.</p>
-    <p>The latency gain varied between sessions: about 2% in the first study, within run-to-run variation, and 19% in the second. It reflects the whole placement, not the head alone. Three later repeat studies on new prompts, 35 rounds in all, found about 18% lower request time overall than the data-movement rule and 15% lower than the time-saving rule, with peak extra GPU memory lower in every round.</p>
-    <p>On my laptop, the method picked a different plan. For Qwen3-14B and Gemma 2 27B it kept the output weights in RAM and rearranged attention and feed-forward weights instead. The procedure is the same; the answer depends on the model, the machine, and the budgets.</p>
+    <p>Keeping the output head ready avoids its temporary GPU allocation, helping explain the lower peak memory. Across three repeat studies on new prompts (35 rounds), pooled request time was about 18% lower than traffic and 15% lower than greedy. Memory was lower in every round; latency gains varied by session.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-limits">
     <h2 id="h-limits">Limits</h2>
-    <p>These are results on two machines, with one-token requests as the main workload.</p>
-    <p>In an exploratory 32-token test with Qwen3-14B, the placement chosen for one-token requests was slower than loading everything from the SSD. The cause was RAM, not the GPU. That placement kept 8&nbsp;GB of weights in RAM, which left less room for the page cache from Guide&nbsp;3, and the replay does not model the page cache. With no weights kept in RAM, H6.5 was the fastest method in a follow-up on new prompts.</p>
-    <p>The replay predicts. Only live measurements, like those in Table 1, count as results.</p>
+    <p>The evaluation covers two machines, mainly with one-token requests. Replay estimates guide the search; Table&nbsp;1 reports live measurements.</p>
+    <p>In an exploratory 32-token Qwen3-14B test, the one-token placement was slower than streaming all weights from the SSD. A follow-up placement with no host-resident weights was faster on new prompts, consistent with preserving more operating-system file cache. Replay does not model this cache.</p>
   </section>
 
-  <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">The point</h2>
-    <p>What belongs in scarce memory depends on when loading it delays the request, not only on its size or byte traffic. H6.5 records one request, replays 1,817 feasible placements in about 3.4&nbsp;s, then freezes the placement for live requests.</p>
-    <p>Against the data-movement rule with the same budgets, the chosen Llama placement changed 198 of 723 tensors, used 23% less peak extra GPU memory in all 20 matched requests, and lowered request time 13% overall. <a href="/writing/speculative-decoding-streamed-inference/">Next: use one slow pass to generate several tokens.</a></p>
-  </section>
+  <div class="col prose">
+    <p><a href="/writing/speculative-decoding-streamed-inference/">Next: how speculative decoding reduces target-model passes.</a></p>
+  </div>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">
     <h2 id="h-refs">References</h2>

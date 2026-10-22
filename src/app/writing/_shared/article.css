@@ -116,13 +116,15 @@
 .post .tcap b, .post figcaption b { color: var(--p-ink); }
 .post .tcap a, .post figcaption a { color: var(--p-accent); font-weight: 600; }
 .post .tablewrap { overflow-x: auto; background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.8rem; }
-.post .narrowtable { max-width: 26rem; }
-.post table { width: 100%; border-collapse: collapse; font-size: 0.97rem; }
+.post .table-block { width: min(100%, 58rem); margin-inline: auto; }
+.post .table-note { margin: 0.8rem 0 0; color: var(--p-muted); font-size: 0.88rem; line-height: 1.6; }
+.post table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.97rem; }
 .post th, .post td { padding: 0.6rem 1rem; border-top: 1px solid var(--p-line); text-align: left; vertical-align: top; }
 .post thead th { color: var(--p-muted); background: var(--p-page); border-top: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: bottom; }
-.post tbody th { color: var(--p-ink); font-weight: 600; white-space: nowrap; }
-.post td { color: var(--p-ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.post td.wrap { min-width: 11rem; white-space: normal; }
+.post th, .post td { overflow-wrap: anywhere; }
+.post tbody th { color: var(--p-ink); font-weight: 600; }
+.post td { color: var(--p-ink-soft); font-variant-numeric: tabular-nums; }
+.post td.wrap { min-width: 0; }
 .post td.mono { font-family: var(--p-mono); font-size: 0.86rem; }
 .post .num { text-align: right; }
 .post th .bytes { display: block; margin-top: 0.15rem; color: var(--p-muted); font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
@@ -239,8 +241,8 @@
 .post .slider label { display: flex; justify-content: space-between; color: var(--p-muted); font-size: 0.84rem; font-weight: 600; }
 .post .slider output { color: var(--p-ink); font-variant-numeric: tabular-nums; }
 .post .slider input { width: 100%; accent-color: var(--p-kv); }
-.post .stack { position: relative; display: flex; height: 2.4rem; margin-top: 1.1rem; background: var(--p-surface); border-radius: 0.35rem; }
-.post .stack > span:not(.s-cap) { height: 100%; transition: width 180ms ease; }
+.post .calc .stack { position: relative; display: flex; height: 2.4rem; margin-top: 1.1rem; background: var(--p-surface); border-radius: 0.35rem; }
+.post .calc .stack > span:not(.s-cap) { height: 100%; transition: width 180ms ease; }
 .post .s-rest { background: repeating-linear-gradient(135deg, var(--p-surface) 0 6px, var(--p-line-strong) 6px 7px); border-radius: 0 0.35rem 0.35rem 0; }
 .post .s-sys { background: var(--p-sys); border-radius: 0.35rem 0 0 0.35rem; }
 .post .s-w { background: var(--p-layer); box-shadow: inset 2px 0 0 var(--p-surface); }
@@ -319,14 +321,21 @@
 @media (max-width: 600px) {
   .post .lanes .fig-wide { display: none; }
   .post .lanes .fig-narrow { display: block; }
-  .post table.stack thead { display: none; }
-  .post table.stack, .post table.stack tbody, .post table.stack tr { display: block; width: 100%; height: auto; }
-  .post table.stack tr { padding: 0.6rem 0.9rem; border-top: 1px solid var(--p-line); }
-  .post table.stack tr:first-child { border-top: 0; }
-  .post table.stack tr.hl { background: var(--p-accent-soft); }
-  .post table.stack th[scope="row"] { display: block; padding: 0 0 0.25rem; border: 0; background: none; white-space: normal; }
-  .post table.stack td { display: flex; gap: 1rem; justify-content: space-between; padding: 0.12rem 0; border: 0; background: none; text-align: right; white-space: normal; }
-  .post table.stack td::before { content: attr(data-label); color: var(--p-muted); font-size: 0.8rem; text-align: left; }
+}
+
+/* Each row becomes a labeled record on small screens, with every value visible. */
+@media (max-width: 700px) {
+  .post table.responsive-table,
+  .post table.responsive-table tbody { display: block; width: 100%; height: auto; }
+  .post table.responsive-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .post table.responsive-table tr { display: block; width: 100%; padding: 0.8rem 1rem; border-top: 1px solid var(--p-line); }
+  .post table.responsive-table tr:first-child { border-top: 0; }
+  .post table.responsive-table tr.hl { background: var(--p-accent-soft); }
+  .post table.responsive-table tr.total { border-top: 2px solid var(--p-ink); }
+  .post table.responsive-table th[scope="row"] { display: block; padding: 0 0 0.4rem; border: 0; background: none; white-space: normal; text-align: left; }
+  .post table.responsive-table td { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 0.75rem; padding: 0.25rem 0; border: 0; background: none; text-align: right; }
+  .post table.responsive-table td::before { content: attr(data-label); color: var(--p-muted); font-family: var(--p-sans); font-size: 0.8rem; font-weight: 500; text-align: left; }
+  .post table.responsive-table td:empty { display: none; }
 }
 .post .ch-axis { fill: var(--p-muted); font: 12px var(--p-mono); }
 .post .ch-k8, .post .ch-k4 { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
@@ -347,7 +356,8 @@
 /* Video with transcript */
 .post .video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border-radius: 0.8rem; }
 .post .transcript { color: var(--p-muted); font-size: 0.88rem; }
-.post details.closer { margin-top: 1.4rem; padding: 0.9rem 1.15rem; background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.8rem; }
+.post details.closer { width: min(100%, 58rem); margin-top: 1.4rem; padding: 0.9rem 1.15rem; background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.8rem; }
+.post details.closer .prose { max-width: 42rem; margin-inline: auto; }
 .post details.closer > summary { color: var(--p-ink); cursor: pointer; font-size: 1.08rem; font-weight: 650; }
 .post details.closer > summary span { display: block; margin-top: 0.15rem; color: var(--p-muted); font-size: 0.86rem; font-weight: 500; }
 .post details.closer[open] > summary { margin-bottom: 0.8rem; }
@@ -376,7 +386,7 @@
   .post th, .post td { padding: 0.5rem 0.65rem; }
   .post thead th { font-size: 0.64rem; letter-spacing: 0.03em; }
   .post tbody th { white-space: normal; }
-  .post td.wrap { min-width: 6.5rem; }
+  .post td.wrap { min-width: 0; }
   .post .terms > div { grid-template-columns: 1fr; gap: 0.1rem; }
   .post .sliders { grid-template-columns: 1fr; }
   .post .readout { grid-template-columns: repeat(2, minmax(0, 1fr)); }

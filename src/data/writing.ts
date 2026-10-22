@@ -1,9 +1,9 @@
 export type WritingSeries = {
   id: string;
   title: string;
-  /** Name of the collection, such as "Guide" or "Speed notes". */
+  /** Short label shown above the collection title. */
   collectionLabel: string;
-  /** Name of one post in it, used with its number: "Guide 3", "Speed note 1". */
+  /** Name used with the part number in navigation. */
   itemLabel: string;
   description: string;
   /** Short narrated video, linked from the home page. */
@@ -17,10 +17,6 @@ export type WritingPost = {
   slug: string;
   href: string;
   title: string;
-  /** Few-word title for the one-line part lists on the home page. */
-  shortTitle: string;
-  /** Optional label shown next to the short title, such as "Paper". */
-  badge?: string;
   /** One line used in series lists. */
   hook: string;
   description: string;
@@ -43,28 +39,28 @@ export type WritingPost = {
 };
 
 export const WRITING_DESCRIPTION =
-  "Practical notes by Oney Erge on running large language models on small GPUs: what must fit, what makes streaming slow, and the measured ways to improve it.";
+  "Technical articles by Oney Erge on running large language models with limited GPU memory: memory budgets, context length, streamed inference, weight placement, and speculative decoding.";
 
 export const writingSeries: WritingSeries[] = [
   {
     id: "small-gpus",
-    title: "Start here: run a model that does not fit",
-    collectionLabel: "Guide",
-    itemLabel: "Guide",
+    title: "Large Language Models on Limited GPUs",
+    collectionLabel: "LLM inference",
+    itemLabel: "Article",
     description:
-      "Four connected notes: why the model does not fit, how streaming works, where time goes, and how H6.5 chooses what stays close to the GPU.",
+      "Four articles on fitting a model, reserving context memory, moving weights, and choosing their placement.",
     trailer: {
       src: "/media/h65-explainer-1min.mp4",
-      title: "Watch my paper in one minute",
+      title: "Video overview · 1 min",
     },
   },
   {
     id: "speculative-decoding",
-    title: "Then make streamed inference faster",
-    collectionLabel: "Speed notes",
-    itemLabel: "Speed note",
+    title: "Speculative Decoding for Streamed LLM Inference",
+    collectionLabel: "Speculative decoding",
+    itemLabel: "Article",
     description:
-      "A small draft model can let one slow pass produce several tokens. These notes show the measurement first, then the main variants.",
+      "Two articles on using draft models to reduce expensive target-model passes.",
   },
 ];
 
@@ -73,18 +69,17 @@ const allPosts: WritingPost[] = [
   {
     slug: "llm-memory-requirements-consumer-gpu",
     href: "/writing/llm-memory-requirements-consumer-gpu/",
-    title: "Why a 14B model does not fit in 8 GB",
-    shortTitle: "Why it does not fit",
-    hook: "Qwen3-14B needs 29.5 GB for its released BF16 weights. This is where the GPU memory goes.",
+    title: "How to Run a 14B Model on an 8 GB GPU",
+    hook: "Qwen3-14B has 29.5 GB of released BF16 weights. This article explains the memory budget and how streamed execution makes the model run on an 8 GB GPU.",
     description:
-      "A memory map for Qwen3-14B on an 8 GB laptop GPU, using the released BF16 weights.",
+      "A memory budget and streamed execution for running Qwen3-14B's released BF16 weights when they exceed GPU memory.",
     seriesId: "small-gpus",
     part: 1,
     status: "published",
     datePublished: "2026-09-13T12:00:00-05:00",
-    dateModified: "2026-10-14T23:40:52-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "September 13, 2026",
-    readingTime: "7 min read",
+    readingTime: "6 min read",
     tags: ["GPU memory", "LLM inference", "BF16"],
     socialImage: "/media/afterimage-social.png",
     cover: {
@@ -97,18 +92,17 @@ const allPosts: WritingPost[] = [
   {
     slug: "kv-cache-streamed-inference-consumer-gpu",
     href: "/writing/kv-cache-streamed-inference-consumer-gpu/",
-    title: "The memory that grows with every token",
-    shortTitle: "Memory that grows",
-    hook: "The KV cache grows with the conversation. Streaming lets the model run without loading all 29.5 GB at once.",
+    title: "How Context Length Affects GPU Memory",
+    hook: "The KV cache grows with context length. This article calculates its cost for Qwen3-14B and shows why model weights are only part of the GPU-memory budget.",
     description:
-      "How the KV cache grows, and a measured streamed run of Qwen3-14B under 2 GB of GPU memory.",
+      "How the KV cache grows with context length and changes the available memory for a streamed Qwen3-14B run.",
     seriesId: "small-gpus",
     part: 2,
     status: "published",
     datePublished: "2026-10-14T18:00:00-05:00",
-    dateModified: "2026-10-14T23:40:52-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "7 min read",
+    readingTime: "5 min read",
     tags: ["KV cache", "LLM inference", "Streaming"],
     socialImage: "/media/afterimage-social.png",
     cover: {
@@ -121,18 +115,17 @@ const allPosts: WritingPost[] = [
   {
     slug: "moving-weights-storage-to-gpu",
     href: "/writing/moving-weights-storage-to-gpu/",
-    title: "Why streamed models are slow",
-    shortTitle: "Why streaming is slow",
-    hook: "A streamed weight must be read, unpacked, and copied. Only late work makes the GPU wait.",
+    title: "Why Weight Offloading Slows Inference",
+    hook: "Each streamed tensor is read, decompressed, and copied to the GPU. The timing shows which steps delay generation.",
     description:
-      "One weight's path from SSD to GPU, the measured bottleneck, and the work worth keeping close.",
+      "Storage reads, decompression, and transfers in streamed LLM inference, with measured bottlenecks.",
     seriesId: "small-gpus",
     part: 3,
     status: "published",
     datePublished: "2026-10-14T18:00:00-05:00",
-    dateModified: "2026-10-14T23:40:52-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "6 min read",
+    readingTime: "5 min read",
     tags: ["Memory hierarchy", "Lossless compression", "Prefetching"],
     socialImage: "/media/afterimage-social.png",
     cover: {
@@ -145,20 +138,18 @@ const allPosts: WritingPost[] = [
   {
     slug: "schedule-aware-exact-weight-placement",
     href: "/writing/schedule-aware-exact-weight-placement/",
-    title: "Which weights should stay near the GPU?",
-    shortTitle: "Which weights stay close?",
-    badge: "Paper",
-    hook: "H6.5 replays a recorded request to spend scarce GPU and RAM on work that makes the GPU wait.",
+    title: "How H6.5 Optimizes Weight Placement",
+    hook: "H6.5 chooses where to keep model weights so the GPU spends less time waiting for them.",
     description:
-      "A plain-language summary of the H6.5 paper and its measured exact-weight placement results.",
+      "How H6.5 searches for weight placements that reduce GPU waits, with measured memory and latency results.",
     seriesId: "small-gpus",
     part: 4,
     status: "published",
     datePublished: "2026-10-14T18:00:00-05:00",
-    dateModified: "2026-10-14T23:50:22-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "6 min read",
-    tags: ["Weight placement", "H6.5", "Paper"],
+    readingTime: "5 min read",
+    tags: ["Weight placement", "H6.5"],
     socialImage: "/media/afterimage-social.png",
     cover: {
       label: "H6.5 result",
@@ -170,18 +161,17 @@ const allPosts: WritingPost[] = [
   {
     slug: "speculative-decoding-streamed-inference",
     href: "/writing/speculative-decoding-streamed-inference/",
-    title: "How one slow pass can generate several tokens",
-    shortTitle: "Several tokens per pass",
-    hook: "A small draft model guesses ahead so the large model can check several tokens in one slow pass.",
+    title: "How Speculative Decoding Speeds Up Inference",
+    hook: "A small draft model proposes tokens before the large model verifies them. Qwen3-14B fell from 17.4 to 9.2 seconds per token on an 8 GB GPU.",
     description:
-      "Speculative decoding explained with a measured Qwen3-14B run on an 8 GB laptop GPU.",
+      "How speculative decoding reduces target-model passes, measured with Qwen3-14B on an 8 GB laptop GPU.",
     seriesId: "speculative-decoding",
     part: 1,
     status: "published",
     datePublished: "2026-10-14T19:00:00-05:00",
-    dateModified: "2026-10-14T23:40:52-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "7 min read",
+    readingTime: "6 min read",
     tags: ["Speculative decoding", "LLM inference", "Streaming"],
     socialImage: "/media/afterimage-social.png",
     cover: {
@@ -194,18 +184,17 @@ const allPosts: WritingPost[] = [
   {
     slug: "speculative-decoding-variants",
     href: "/writing/speculative-decoding-variants/",
-    title: "Three ways to improve speculative decoding",
-    shortTitle: "Three ways to improve it",
-    hook: "Choose the draft source, its length, and whether the large model checks one guess or a tree.",
+    title: "Speculative Decoding: Draft Models, Draft Length, and Trees",
+    hook: "Draft source, proposed length, and verification shape determine speculative-decoding efficiency. This article compares the main choices and small laptop tests.",
     description:
-      "A practical comparison of draft source, draft length, and tree checking, with two small laptop measurements.",
+      "How draft source, draft length, and tree verification affect speculative decoding for streamed models.",
     seriesId: "speculative-decoding",
     part: 2,
     status: "published",
     datePublished: "2026-10-14T19:00:00-05:00",
-    dateModified: "2026-10-14T23:40:52-05:00",
+    dateModified: "2026-10-22T12:04:43-05:00",
     dateLabel: "October 14, 2026",
-    readingTime: "5 min read",
+    readingTime: "4 min read",
     tags: ["Speculative decoding", "Self-speculation", "Token trees"],
     socialImage: "/media/afterimage-social.png",
     cover: {

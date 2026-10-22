@@ -1,19 +1,17 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Why streamed models are slow</h1>
-    <p class="deck">Streaming made the 29.5&nbsp;GB model fit under 2&nbsp;GB of GPU memory, but each generated token took 27 to 33&nbsp;s. This note follows one weight from SSD to GPU and separates loading that is hidden from loading that makes the GPU wait.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>6 min read</span></div>
+    <h1>Why Weight Offloading Slows Inference</h1>
+    <p class="deck">Offloading lets a 29.5&nbsp;GB model run below 2&nbsp;GB of GPU memory, but fetching weights from storage took 27 to 33&nbsp;s per generated token in this measured workload.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>5 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>Every generated token passes through every decoder layer, so in streamed execution every token also needs every weight that is not already on the GPU. With nothing kept on the GPU, the whole model makes the trip from storage once per pass.</p>
-    <p>That trip has up to three steps. Each step uses a different part of the computer, and the parts run at very different speeds.</p>
+    <p>Every generated token passes through every decoder layer. Any weight not already close to the GPU must be read, prepared, and copied again for that pass.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-path">
     <h2 id="h-path">The path from storage to the GPU</h2>
-    <p>A weight that is not on the GPU starts in one of two places. Storage, here the laptop's SSD, keeps the model files permanently. RAM, the computer's main memory, is faster but smaller, and it is emptied when the computer turns off.</p>
-    <p>To be used, a weight is read from the SSD into RAM and then copied over the PCIe connection into GPU memory, the only memory the GPU computes from at full speed (Guide&nbsp;1).</p>
+    <p>A stored weight is read from the SSD into RAM, unpacked if compressed, and copied over PCIe into GPU memory. The GPU computes from that final copy.</p>
   </section>
 
   <div class="wide block">
@@ -30,7 +28,7 @@
   </div>
 
   <div class="col prose">
-    <p>The operating system keeps recently read files in unused RAM, called the <strong>page cache</strong>, so reading the same file again can be much faster. On my laptop, a repeated read of the same file reached 16.6&nbsp;GB/s, about 7 times the cold read <a class="cite" href="#ref-7">[7]</a>. The measurements in this series clear the page cache before each run, so they start from the cold speed. The page cache returns in Guide&nbsp;4.</p>
+    <p>The operating system can keep recently read files in unused RAM, its <strong>page cache</strong>. A repeated read reached 16.6&nbsp;GB/s on my laptop, about 7 times the cold read <a class="cite" href="#ref-7">[7]</a>. The measurements here clear that cache before each run.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-steps">
@@ -40,30 +38,26 @@
       <math display="block"><msub><mi>t</mi><mtext>prep</mtext></msub><mo>&#x2248;</mo><mfrac><msub><mi>S</mi><mtext>disk</mtext></msub><msub><mi>b</mi><mtext>disk</mtext></msub></mfrac><mo>+</mo><msub><mi>t</mi><mtext>unpack</mtext></msub><mo>+</mo><mfrac><mi>S</mi><msub><mi>b</mi><mtext>PCIe</mtext></msub></mfrac></math>
       <span class="eqn">(1)</span>
     </div>
-    <p class="where">where S<sub>disk</sub> is the number of bytes stored on the SSD, b<sub>disk</sub> is the read speed, t<sub>unpack</sub> is the unpacking time (zero for a weight stored uncompressed), S is the size of the unpacked weight, and b<sub>PCIe</sub> is the copy speed.</p>
-    <p>For a weight stored uncompressed, the speeds in Figure 1 give lower bounds, because the PCIe value is the specification maximum. Reading one 0.66&nbsp;GB decoder layer from the SSD takes about 0.29&nbsp;s, and copying it over PCIe about 0.02&nbsp;s. For the whole 29.5&nbsp;GB model, that is about 13&nbsp;s of reading and under 1&nbsp;s of copying.</p>
-    <p>Reading dominates. The copy over PCIe, which is often blamed for slow streaming, is more than 10 times faster than the cold read here.</p>
-    <p>Reading the whole model once takes about 13&nbsp;seconds, close to half of the 27&nbsp;seconds per token that AirLLM measured in Guide&nbsp;2. The measured time also includes processing the input prompt, the computation, and the software work around each step.</p>
+    <p class="where">S<sub>disk</sub> is stored size, b<sub>disk</sub> is SSD read speed, t<sub>unpack</sub> is unpacking time, S is unpacked size, and b<sub>PCIe</sub> is copy speed.</p>
+    <p>On this laptop, reading a 0.66&nbsp;GB decoder layer cold takes about 0.29&nbsp;s; copying it over PCIe takes about 0.02&nbsp;s. Reading the whole 29.5&nbsp;GB model takes about 13&nbsp;s, versus under 1&nbsp;s for copying. Storage reads dominate this configuration.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-compress">
     <h2 id="h-compress">Lossless compression: fewer bytes to read, more work to unpack</h2>
-    <p>If reading dominates, reading fewer bytes should help.</p>
-    <p>Afterimage stores the weights compressed without loss <a class="cite" href="#ref-7">[7]</a>. A BF16 number has 1 sign bit, 8 exponent bits, and 7 mantissa bits. Only a few exponent values are common, so Afterimage re-encodes the exponent with a Huffman code, which gives frequent values shorter codes <a class="cite" href="#ref-2">[2]</a>, the same idea as DFloat11 <a class="cite" href="#ref-3">[3]</a>. Unpacking restores exactly the released bits.</p>
-    <p>For Qwen3-14B, this shrinks the stored weights from 29.5&nbsp;GB to <strong>20.3&nbsp;GB</strong>, 1.45 times smaller. At 2.3&nbsp;GB/s, that saves about 4&nbsp;seconds of reading per pass through the model.</p>
+    <p>Afterimage stores the weights compressed without loss <a class="cite" href="#ref-7">[7]</a>, using shorter codes for common BF16 exponent values <a class="cite" href="#ref-2">[2]</a>. It restores the released bits before computation.</p>
+    <p>For Qwen3-14B, storage falls from 29.5&nbsp;GB to <strong>20.3&nbsp;GB</strong>, saving about 4&nbsp;s of reading at 2.3&nbsp;GB/s.</p>
     <p>The saving is not free. Every compressed weight must be unpacked before use, which adds t<sub>unpack</sub> to Eq. (1). Compression shortens the time to a ready weight only when</p>
     <div class="equation" role="group" aria-label="Equation 2">
       <math display="block"><mfrac><mrow><mi>S</mi><mo>&#x2212;</mo><msub><mi>S</mi><mtext>disk</mtext></msub></mrow><msub><mi>b</mi><mtext>disk</mtext></msub></mfrac><mo>&gt;</mo><msub><mi>t</mi><mtext>unpack</mtext></msub></math>
       <span class="eqn">(2)</span>
     </div>
     <p class="where">that is, when the reading time it saves is longer than the unpacking time it adds.</p>
-    <p>In my measurements, it was not. At the minimum-memory point, Afterimage minimum-memory, which uses compression but keeps no weights close, took 33&nbsp;seconds per token against AirLLM's 27 (Guide&nbsp;2, Table&nbsp;2): the reading time it saved was spent on unpacking.</p>
+    <p>At the minimum-memory point, it was not enough: Afterimage took 33&nbsp;s per token against AirLLM's 27&nbsp;s because unpacking offset its read-time saving.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-overlap">
     <h2 id="h-overlap">Loading during computation</h2>
-    <p>Reading, unpacking, and copying do not have to stop the GPU. A streaming engine can <strong>prefetch</strong>: while the GPU computes one layer, the next layer is already on its way. FlexGen organizes its whole schedule around this overlap <a class="cite" href="#ref-4">[4]</a>.</p>
-    <p>If the next layer is ready before the GPU finishes, its loading time is hidden. If it is not, the GPU waits.</p>
+    <p>A streaming engine can <strong>prefetch</strong>: while the GPU computes one layer, the next layer is already loading <a class="cite" href="#ref-4">[4]</a>. Loading is free only when it finishes before the GPU needs the weight; otherwise the GPU waits.</p>
   </section>
 
   <div class="wide block">
@@ -89,40 +83,38 @@
   </div>
 
   <div class="col prose">
-    <p>Only the waiting delays the answer. Two weights can take the same time to load and still cost very different amounts, depending on whether their loading overlaps with computation. Guide&nbsp;4 returns to this point, because it decides which weights are worth keeping close.</p>
+    <p>Two equally large weights can therefore have very different latency costs. What matters is whether their loading lies on the request's critical path.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-close">
     <h2 id="h-close">Keeping some weights close</h2>
-    <p>The remaining option is to stop moving some weights at all. With spare GPU memory, some weights can stay there permanently. With spare RAM, others can stay there unpacked and skip the read and unpack steps. Table 1 compares measured operating points on my laptop.</p>
+    <p>GPU memory can keep some weights resident; RAM can keep others unpacked. Both avoid some of the work above. Table 1 shows the measured trade-off on my laptop.</p>
   </section>
 
   <div class="col block">
     <p class="tcap"><b>Table 1.</b> Measured operating points for Qwen3-14B BF16 on the RTX 3080 Laptop GPU: 4 prompts, 4 generated tokens each, greedy decoding, cold page cache. Every method produced the same output tokens. Source: Afterimage results <a class="cite" href="#ref-7">[7]</a>.</p>
     <div class="tablewrap">
-      <table>
+      <table class="responsive-table">
         <thead><tr><th scope="col">Method</th><th scope="col" class="num">Measured PyTorch peak</th><th scope="col" class="num">Request time per generated token</th></tr></thead>
         <tbody>
-          <tr><th scope="row" class="wrap">AirLLM 3.2.0, one layer at a time <a class="cite" href="#ref-6">[6]</a></th><td class="num">1.6&nbsp;GB</td><td class="num">27&nbsp;s</td></tr>
-          <tr><th scope="row" class="wrap">Afterimage minimum-memory</th><td class="num">1.7&nbsp;GB</td><td class="num">33&nbsp;s</td></tr>
-          <tr class="hl"><th scope="row" class="wrap">Afterimage 4&nbsp;GB plan, weights kept on the GPU</th><td class="num">3.9&nbsp;GB</td><td class="num">17&nbsp;s</td></tr>
-          <tr><th scope="row" class="wrap">Hugging Face Accelerate, weights on GPU, RAM, and SSD <a class="cite" href="#ref-5">[5]</a></th><td class="num">3.8&nbsp;GB</td><td class="num">14&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">AirLLM 3.2.0, one layer at a time <a class="cite" href="#ref-6">[6]</a></th><td data-label="PyTorch peak" class="num">1.6&nbsp;GB</td><td data-label="Request time/token" class="num">27&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Afterimage minimum-memory</th><td data-label="PyTorch peak" class="num">1.7&nbsp;GB</td><td data-label="Request time/token" class="num">33&nbsp;s</td></tr>
+          <tr class="hl"><th scope="row" class="wrap">Afterimage 4&nbsp;GB plan, weights kept on the GPU</th><td data-label="PyTorch peak" class="num">3.9&nbsp;GB</td><td data-label="Request time/token" class="num">17&nbsp;s</td></tr>
+          <tr><th scope="row" class="wrap">Hugging Face Accelerate, weights on GPU, RAM, and SSD <a class="cite" href="#ref-5">[5]</a></th><td data-label="PyTorch peak" class="num">3.8&nbsp;GB</td><td data-label="Request time/token" class="num">14&nbsp;s</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="col prose">
-    <p>With about 4&nbsp;GB, both approaches take 14 to 17&nbsp;seconds per token instead of 27 to 33. The extra memory is spent on weights that no longer make the trip.</p>
-    <p>This is also where compression finally helps. With fewer bytes left to read and unpacking done in larger pieces, Afterimage's 4&nbsp;GB plan runs 1.9 times faster than its own minimum-memory point.</p>
-    <p>That leaves the question this series has been building to. A few gigabytes of spare memory hold only some of the weights. Afterimage's 4&nbsp;GB plan chose them with a sensible rule, which I call the data-movement rule: keep the weights that save the most data movement per byte of memory they occupy.</p>
-    <p><strong>Guide&nbsp;4 shows why that rule can still keep the wrong weights.</strong></p>
+    <p>With about 4&nbsp;GB, the measured requests take 14 to 17&nbsp;s per token rather than 27 to 33&nbsp;s. The added memory holds weights that no longer make the trip.</p>
+    <p>The next question is which weights deserve that scarce space. A rule based only on bytes moved can still keep the wrong ones.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">The point</h2>
-    <p>With a cold page cache, reading from the SSD dominated this laptop run: about 13&nbsp;s per pass through the model, against under 1&nbsp;s for the PCIe copy. Work that finishes while the GPU is computing is hidden; work that arrives late stalls the request.</p>
-    <p>Keeping selected weights close cut the measured time to 14 to 17&nbsp;s per token. <a href="/writing/schedule-aware-exact-weight-placement/">Next: how H6.5 chooses which weights deserve that scarce space.</a></p>
+    <h2 id="h-conc">What to optimize</h2>
+    <p>Storage reads dominated this cold-cache run: about 13&nbsp;s for the model versus under 1&nbsp;s for copying. The loading that arrives late, rather than the most bytes, determines the stall.</p>
+    <p><a href="/writing/schedule-aware-exact-weight-placement/">Next: how H6.5 chooses which weights should stay close to the GPU.</a></p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

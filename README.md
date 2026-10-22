@@ -24,6 +24,8 @@ npm run check:seo
 
 `npm run build` writes the static site to `out/`. Run `npm run check:seo` after it to verify the generated canonical URLs, internal links, redirect stubs, sitemap, robots file, RSS feed, and structured-data datetimes. The GitHub Pages workflow runs the same gate before publishing that directory and preserves the custom domain through `public/CNAME`.
 
+Before building, `npm run check:writing` checks the article fragments for mismatched HTML tags and missing mobile table labels. It also runs automatically as the build's precheck.
+
 ## Projects
 
 Each project card on the homepage links straight to its GitHub repository. The card text lives in `src/data/projects.ts`.

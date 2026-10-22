@@ -1,14 +1,13 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>Why a 14B model does not fit in 8&nbsp;GB</h1>
-    <p class="deck">Qwen3-14B needs 29.5&nbsp;GB for its released BF16 weights; my laptop GPU has 8&nbsp;GB. This note maps the memory budget and shows why the model can still run one part at a time without changing those weights.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>Updated October 14, 2026</span><span>7 min read</span></div>
+    <h1>How to Run a 14B Model on an 8&nbsp;GB GPU</h1>
+    <p class="deck">Qwen3-14B has 29.5&nbsp;GB of released BF16 weights. This article maps the GPU-memory budget and explains why loading the model one part at a time makes it runnable on an 8&nbsp;GB GPU.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-09-13">September 13, 2026</time><span>Updated October 14, 2026</span><span>6 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>Qwen3-14B is the 14B model of the Qwen3 family <a class="cite" href="#ref-1">[1]</a>. Its released BF16 weights need 29.5&nbsp;GB, while my NVIDIA RTX 3080 Laptop GPU has 8&nbsp;GB. Loading the whole model normally is impossible.</p>
-    <p>The weights normally sit in GPU memory because it is the only memory the GPU computes from at full speed. On my GPU it is read at about 448&nbsp;GB/s, while data in RAM or on the SSD must cross the PCIe connection at about 32&nbsp;GB/s at most <a class="cite" href="#ref-3">[3]</a>.</p>
-    <p>The two practical choices are to use smaller approximate weights, usually through quantization, or to keep most of the released weights outside the GPU and load each part when it is needed. This series studies the second choice.</p>
+    <p>Qwen3-14B is a 14B-parameter model in the Qwen3 family <a class="cite" href="#ref-1">[1]</a>. Its released BF16 weights need 29.5&nbsp;GB, while my NVIDIA RTX 3080 Laptop GPU has 8&nbsp;GB. Loading the whole model at once is therefore impossible.</p>
+    <p>One option is smaller, approximate weights. The other, examined here, is to keep the released weights outside the GPU and load each part only when the model needs it.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-budget">
@@ -19,15 +18,14 @@
       <span class="eqn">(1)</span>
     </div>
     <dl class="terms">
-      <div><dt>M<sub>sys</sub></dt><dd><b>System and display.</b> Memory used by the operating system, the desktop, connected monitors, and other open programs before the model starts. On my laptop, with Windows, a browser, and a code editor open, <code>nvidia-smi</code> reported 2.2&nbsp;GB in use.</dd></div>
-      <div><dt>M<sub>rt</sub></dt><dd><b>GPU software.</b> Memory held by the NVIDIA driver and by libraries such as PyTorch, outside the model itself. This depends on the software stack; measure it on your own machine with <code>nvidia-smi</code>, the same way as M<sub>sys</sub>, before and after loading the library.</dd></div>
+      <div><dt>M<sub>sys</sub></dt><dd><b>System and display.</b> Memory already in use before the model starts. My laptop used 2.2&nbsp;GB with Windows, a browser, and a code editor open.</dd></div>
+      <div><dt>M<sub>rt</sub></dt><dd><b>GPU software.</b> Memory used by the driver and libraries such as PyTorch.</dd></div>
       <div><dt>M<sub>W</sub></dt><dd><b>Weights.</b> Fixed by the model and its number format. Calculated below.</dd></div>
       <div><dt>M<sub>KV</sub></dt><dd><b>Stored keys and values.</b> Memory kept for every token of the input prompt and of the generated answer. It grows as the conversation grows. Explained below.</dd></div>
       <div><dt>M<sub>act</sub></dt><dd><b>Activations.</b> Temporary results inside the layer that is being computed, released when the layer finishes.</dd></div>
     </dl>
     <p>M<sub>GPU</sub> is the memory on the graphics card. GPU makers label memory in binary units, so my "8&nbsp;GB" card holds 8.6&nbsp;GB in the decimal units this post uses throughout. I still call it an "8&nbsp;GB GPU" in prose, but every chart and calculation below uses 8.6&nbsp;GB.</p>
-    <p>On my laptop, that leaves about 6.4&nbsp;GB of physical capacity before any model weights, KV cache, runtime allocations, or activations are added.</p>
-    <p>Only M<sub>W</sub> and M<sub>KV</sub> can be calculated directly from the model. The other three terms depend on the machine and software stack and must be measured separately. The weights therefore cannot use the whole GPU by themselves.</p>
+    <p>That leaves about 6.4&nbsp;GB before model weights, the KV cache, runtime allocations, and activations. Only weights and the KV cache can be calculated from the model; the other terms must be measured on the machine.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-formats">
@@ -38,108 +36,48 @@
       <span class="eqn">(2)</span>
     </div>
     <p class="where">where N is the number of weights and b is the number of bytes each weight uses.</p>
-    <p>A model is normally trained and released using one fixed number format for every weight. One way to fit a model into less memory is to store each weight with fewer bits than it was released with. This is called quantization, and it directly lowers b in Eq. (2). Fewer bits give fewer possible values per weight, so quantization discards some information and can reduce accuracy.</p>
+    <p>Quantization uses fewer bits per weight, lowering b in Eq. (2). It also changes the released values and can reduce accuracy.</p>
   </section>
 
   <div class="col block">
     <p class="tcap"><b>Table 1.</b> Common number formats for language model weights. The size under each format is the storage for one weight; 1 byte is 8 bits.</p>
     <div class="tablewrap">
-      <table>
+      <table class="responsive-table">
         <thead><tr><th scope="col">Format</th><th scope="col" class="num">Storage per weight</th><th scope="col">Typical use</th></tr></thead>
         <tbody>
-          <tr><th scope="row">FP32</th><td class="num">4 bytes</td><td class="wrap">Traditional training and reference calculations</td></tr>
-          <tr><th scope="row">FP16</th><td class="num">2 bytes</td><td class="wrap">Inference on GPUs, mixed-precision training</td></tr>
-          <tr class="hl"><th scope="row">BF16</th><td class="num">2 bytes</td><td class="wrap">Training and release of recent open models</td></tr>
-          <tr><th scope="row">8-bit integer</th><td class="num">About 1 byte</td><td class="wrap">Quantized inference</td></tr>
-          <tr><th scope="row">4-bit integer</th><td class="num">About 0.5 byte</td><td class="wrap">Local inference on consumer GPUs</td></tr>
+          <tr><th scope="row">FP32</th><td data-label="Storage per weight" class="num">4 bytes</td><td data-label="Typical use" class="wrap">Traditional training and reference calculations</td></tr>
+          <tr><th scope="row">FP16</th><td data-label="Storage per weight" class="num">2 bytes</td><td data-label="Typical use" class="wrap">Inference on GPUs, mixed-precision training</td></tr>
+          <tr class="hl"><th scope="row">BF16</th><td data-label="Storage per weight" class="num">2 bytes</td><td data-label="Typical use" class="wrap">Training and release of recent open models</td></tr>
+          <tr><th scope="row">8-bit integer</th><td data-label="Storage per weight" class="num">About 1 byte</td><td data-label="Typical use" class="wrap">Quantized inference</td></tr>
+          <tr><th scope="row">4-bit integer</th><td data-label="Storage per weight" class="num">About 0.5 byte</td><td data-label="Typical use" class="wrap">Local inference on consumer GPUs</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="col prose">
-    <p>BF16 was designed to keep the range of FP32 in half the memory <a class="cite" href="#ref-2">[2]</a>. It is the released format for Qwen3-14B. With N = 14.8&nbsp;billion weights and b = 2&nbsp;bytes, Qwen3-14B needs 29.5&nbsp;GB.</p>
-    <p>Quantization reduces this requirement. For Qwen3-14B, 8-bit weights need about 14.8&nbsp;GB and 4-bit weights need about 7.4&nbsp;GB, before the additional metadata used by practical quantization formats.</p>
-    <p><strong>This series keeps BF16.</strong> In this series, exact weights means that inference ultimately uses the same BF16 values released with the model, not an 8-bit or 4-bit approximation. Afterimage <a class="cite" href="#ref-4">[4]</a>, the engine this series builds toward, is designed to run these exact weights: it does not introduce weight error through lossy quantization.</p>
-    <p>Where this series reports the same output tokens across methods, such as in Guide&nbsp;2, that is a separate measured result and not a guarantee that follows automatically from using exact weights.</p>
+    <p>BF16 is the released format for Qwen3-14B <a class="cite" href="#ref-2">[2]</a>. With 14.8&nbsp;billion weights at 2&nbsp;bytes each, it needs 29.5&nbsp;GB. Eight-bit and 4-bit weights would need about 14.8&nbsp;GB and 7.4&nbsp;GB before format metadata.</p>
+    <p><strong>This series keeps BF16.</strong> Here, exact weights means inference ultimately uses the released BF16 values, not an 8-bit or 4-bit approximation. Matching output tokens is a separate measured result.</p>
   </div>
 
   <section class="col prose" aria-labelledby="h-parts">
     <h2 id="h-parts">Parts of a language model</h2>
-    <p>To understand how a model larger than the GPU can still run, we need to know which parts of the model are used in sequence.</p>
-    <h3>Model files and configuration</h3>
-    <p>Downloading Qwen3-14B from Hugging Face gives three kinds of files. The weights are stored in several <code>.safetensors</code> files. A tokenizer splits text into tokens and gives each token an ID number. The file <code>config.json</code> describes the shape of the model.</p>
+    <p>A token enters through the embedding table, passes through 40 decoder layers in order, and leaves through the output head. Each decoder layer contains about 330M weights; the output head contains about 778M.</p>
+    <p>This sequence is the key: the GPU needs the current part, not all 29.5&nbsp;GB at the same instant.</p>
+    <p>Table 2 applies Eq. (2) to the main parts.</p>
   </section>
 
-  <div class="col block">
-    <p class="tcap"><b>Table 2.</b> Entries of Qwen3-14B's <code>config.json</code> <a class="cite" href="#ref-1">[1]</a> used in this post.</p>
+  <div class="table-block block">
+    <p class="tcap"><b>Table 2.</b> Weights of Qwen3-14B by part, in BF16. Rows may not sum exactly because of rounding.</p>
     <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Entry</th><th scope="col">Meaning</th><th scope="col">Symbol</th><th scope="col" class="num">Value</th></tr></thead>
-        <tbody>
-          <tr><th scope="row"><code>vocab_size</code></th><td class="wrap">Number of different tokens</td><td>V</td><td class="num">151,936</td></tr>
-          <tr><th scope="row"><code>hidden_size</code></th><td class="wrap">Length of the numerical representation of each token</td><td>d</td><td class="num">5,120</td></tr>
-          <tr><th scope="row"><code>num_hidden_layers</code></th><td class="wrap">Number of decoder layers</td><td>L</td><td class="num">40</td></tr>
-          <tr><th scope="row"><code>num_attention_heads</code></th><td class="wrap">Attention heads per layer</td><td></td><td class="num">40</td></tr>
-          <tr><th scope="row"><code>num_key_value_heads</code></th><td class="wrap">Sets of keys and values per layer</td><td>n<sub>kv</sub></td><td class="num">8</td></tr>
-          <tr><th scope="row"><code>head_dim</code></th><td class="wrap">Length of each key and value</td><td>d<sub>h</sub></td><td class="num">128</td></tr>
-          <tr><th scope="row"><code>torch_dtype</code></th><td class="wrap">Released number format</td><td></td><td class="num">bfloat16</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col prose">
-    <p>The number of layers is not a fixed property of language models in general. It is an architecture choice made when the model is designed and trained. Qwen3-14B has 40 decoder layers, and that value is recorded in <code>config.json</code>.</p>
-    <p>A token enters the model through the embedding table, passes through the decoder layers in order, and leaves through the output head.</p>
-
-    <h3>Embedding table</h3>
-    <p>The embedding table is the first stop for the input prompt. It takes each token of the prompt and looks up its row in a table, converting that piece of text into a list of numbers. Those numbers are what the decoder layers work with.</p>
-  </div>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 3.</b> A simple embedding table. The numbers are illustrative.</p>
-    <div class="tablewrap narrowtable">
-      <table>
-        <thead><tr><th scope="col" class="num">Token ID</th><th scope="col">Token</th><th scope="col">Row of numbers</th></tr></thead>
-        <tbody>
-          <tr><td class="num">0</td><td>the</td><td class="mono">[0.2, &#x2212;0.1, 0.7]</td></tr>
-          <tr><td class="num">1</td><td>dog</td><td class="mono">[0.9, 0.3, &#x2212;0.4]</td></tr>
-          <tr><td class="num">2</td><td>ran</td><td class="mono">[&#x2212;0.5, 0.8, 0.1]</td></tr>
-          <tr><td class="num">3</td><td>in</td><td class="mono">[0.0, &#x2212;0.6, 0.2]</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col prose">
-    <p>The text “the dog” splits into the tokens “the” and “dog,” and the embedding table replaces each one with its row from Table 3. No arithmetic happens at this step; it is a lookup.</p>
-
-    <h3>Decoder layers</h3>
-    <p>Coming out of the embedding table, every token has a list of numbers. Each decoder layer updates these representations using its own weights and information from earlier tokens.</p>
-    <p>Qwen3-14B repeats this 40 times, one decoder layer after another, allowing each token representation to incorporate information from the tokens that came before it.</p>
-    <p>Inside each layer, attention lets a token use information from earlier tokens, while a feed-forward step transforms the token representation further. Both operations use the layer's own weights. Each Qwen3-14B decoder layer contains about 330M weights.</p>
-
-    <h3>Output head</h3>
-    <p>The output head turns the decoder layers' final numerical representation into scores for possible next <strong>tokens</strong>. It compares the final representation with rows corresponding to the model's vocabulary and assigns each candidate token a score.</p>
-    <p>With the greedy decoding used in this series, the highest-scoring token is selected as the next token of the answer.</p>
-    <p>In Qwen3-14B, the output head contains about 778M weights.</p>
-
-    <h3>Weight memory of each part</h3>
-    <p>Table 4 applies Eq. (2) to each part.</p>
-  </div>
-
-  <div class="col block">
-    <p class="tcap"><b>Table 4.</b> Weights of Qwen3-14B by part, in BF16. Calculated from Table 2. Rows may not sum exactly because of rounding.</p>
-    <div class="tablewrap">
-      <table>
+      <table class="responsive-table">
         <thead><tr><th scope="col">Part</th><th scope="col">What it does</th><th scope="col" class="num">Weights</th><th scope="col" class="num">Memory</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Embedding table</th><td class="wrap">Looks up the numerical representation for each token</td><td class="num">778M</td><td class="num">1.6&nbsp;GB</td></tr>
-          <tr><th scope="row">One decoder layer</th><td class="wrap">Mixes information between tokens and transforms each token</td><td class="num">330M</td><td class="num">0.66&nbsp;GB</td></tr>
-          <tr><th scope="row">All 40 decoder layers</th><td class="wrap"></td><td class="num">13.2B</td><td class="num">26.4&nbsp;GB</td></tr>
-          <tr><th scope="row">Output head</th><td class="wrap">Scores every token as the possible next token</td><td class="num">778M</td><td class="num">1.6&nbsp;GB</td></tr>
-          <tr class="total"><th scope="row">Total</th><td></td><td class="num">14.8B</td><td class="num">29.5&nbsp;GB</td></tr>
+          <tr><th scope="row">Embedding table</th><td data-label="What it does" class="wrap">Looks up the numerical representation for each token</td><td data-label="Weights" class="num">778M</td><td data-label="Memory" class="num">1.6&nbsp;GB</td></tr>
+          <tr><th scope="row">One decoder layer</th><td data-label="What it does" class="wrap">Mixes information between tokens and transforms each token</td><td data-label="Weights" class="num">330M</td><td data-label="Memory" class="num">0.66&nbsp;GB</td></tr>
+          <tr><th scope="row">All 40 decoder layers</th><td data-label="What it does" class="wrap"></td><td data-label="Weights" class="num">13.2B</td><td data-label="Memory" class="num">26.4&nbsp;GB</td></tr>
+          <tr><th scope="row">Output head</th><td data-label="What it does" class="wrap">Scores every token as the possible next token</td><td data-label="Weights" class="num">778M</td><td data-label="Memory" class="num">1.6&nbsp;GB</td></tr>
+          <tr class="total"><th scope="row">Total</th><td data-label="What it does"></td><td data-label="Weights" class="num">14.8B</td><td data-label="Memory" class="num">29.5&nbsp;GB</td></tr>
         </tbody>
       </table>
     </div>
@@ -147,7 +85,6 @@
 
   <div class="col prose">
     <p>Each individual model component fits on the GPU. The problem is keeping all 40 decoder layers resident together: they require about 26.4&nbsp;GB.</p>
-    <p>Figure 1 draws the weights to scale against the GPU.</p>
   </div>
 
   <div class="wide block">
@@ -175,13 +112,13 @@
   </div>
 
   <div class="col prose">
-    <p>This sequential structure is important. The model contains 29.5&nbsp;GB of weights, but all 29.5&nbsp;GB do not have to be on the GPU at the same instant.</p>
+    <p>The model is larger than the GPU, but it uses its major weight groups one after another.</p>
   </div>
 
-  <section class="col prose" aria-labelledby="h-conc">
-    <h2 id="h-conc">The point</h2>
-    <p>The released BF16 model needs 29.5&nbsp;GB, mostly in its 40 decoder layers, before the KV cache and temporary working memory are counted. The GPU cannot hold it all, but the model uses its major weight groups in sequence, so it does not need them all at the same instant.</p>
-    <p><a href="/writing/kv-cache-streamed-inference-consumer-gpu/">Next: the memory that grows with every token</a>, and a measured streamed run that keeps the GPU peak under 2&nbsp;GB.</p>
+  <section class="col prose" aria-labelledby="h-streaming">
+    <h2 id="h-streaming">Running one part at a time</h2>
+    <p>Streaming keeps weights outside GPU memory until they are needed. During decoding, the engine loads the embedding table, then each decoder layer in order, then the output head. It releases a part after use and repeats the sequence for the next output token.</p>
+    <p>This trades memory for data movement. The GPU holds the current weights, the KV cache, and temporary work rather than the whole model. The next articles quantify the context-memory cost and the latency of fetching weights from storage.</p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">

@@ -10,8 +10,14 @@ function Play() {
   );
 }
 
-/** One series on the home page: its title and a numbered list of its parts, one line each. */
-export function WritingSeriesList({ series, parts }: { series: WritingSeries; parts: WritingPost[] }) {
+/** One series on the home page: its title and a concise list of its parts. */
+export function WritingSeriesList({
+  series,
+  parts,
+}: {
+  series: WritingSeries;
+  parts: WritingPost[];
+}) {
   const headingId = `home-series-${series.id}`;
 
   return (
@@ -24,8 +30,7 @@ export function WritingSeriesList({ series, parts }: { series: WritingSeries; pa
             <>
               <span className={styles.number}>{post.part}</span>
               <span className={styles.name}>
-                {post.shortTitle}
-                {post.badge && <span className={styles.badge}>{post.badge}</span>}
+                {post.title}
               </span>
               <span className={styles.time}>
                 {post.status === "published" ? post.readingTime.replace(" read", "") : "Soon"}
