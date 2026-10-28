@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FEED_ALTERNATES, FEED_PATH, SITE, SITE_YEAR } from "@/data/site";
-import { WRITING_DESCRIPTION as DESCRIPTION, getSeriesParts, writingPosts, writingSeries } from "@/data/writing";
+import { WRITING_DESCRIPTION as DESCRIPTION, getSeriesParts, shareImagePath, writingPosts, writingSeries } from "@/data/writing";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -39,7 +39,7 @@ export default function WritingPage() {
       headline: post.title,
       description: post.description,
       url: `${SITE}${post.href}`,
-      image: `${SITE}${post.socialImage}`,
+      image: `${SITE}${shareImagePath(post)}`,
       datePublished: post.datePublished,
       dateModified: post.dateModified,
       keywords: post.tags,

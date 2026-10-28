@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE, SITE_MODIFIED } from "@/data/site";
-import { writingPosts } from "@/data/writing";
+import { shareImagePath, writingPosts } from "@/data/writing";
 
 export const dynamic = "force-static";
 
@@ -29,7 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: post.dateModified,
       changeFrequency: "monthly" as const,
       priority: 0.85,
-      images: [`${SITE}${post.socialImage}`],
+      images: [`${SITE}${shareImagePath(post)}`],
     })),
   ];
 }

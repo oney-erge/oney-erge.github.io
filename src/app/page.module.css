@@ -720,6 +720,15 @@
   aspect-ratio: 16 / 10;
   overflow: hidden;
   isolation: isolate;
+  container-type: inline-size;
+}
+
+/* The Afterimage measure and its badge share the bottom edge and collide on narrow cards
+   (three-column desktop grid and phones); the measure carries the key number, so it stays. */
+@container (max-width: 28rem) {
+  .afterimageVisual .visualBadge {
+    display: none;
+  }
 }
 
 .coverImage,
@@ -1122,10 +1131,6 @@
     left: 0.7rem;
     justify-content: center;
     font-size: 0.57rem;
-  }
-
-  .afterimageVisual .visualBadge {
-    display: none;
   }
 
   .researchGroupHeader {

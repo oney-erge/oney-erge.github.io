@@ -147,6 +147,12 @@ const educationSchools = [
 
 const papers = [
   {
+    year: "2026",
+    venue: "Preprint, Zenodo",
+    title: "Schedule-Aware Exact Weight Placement for Large Language Models with Limited GPU Memory",
+    href: "https://doi.org/10.5281/zenodo.23322525",
+  },
+  {
     year: "2022",
     venue: "JNGSE",
     title: "Combining physics-based and data-driven modeling in well construction: Hybrid fluid dynamics modeling",
