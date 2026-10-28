@@ -54,3 +54,9 @@ The site includes a Google Analytics 4 integration that is disabled until a vali
 GA4's enhanced measurement records a click on a project card as an outbound `click` event with the repository URL, so the site needs no extra tracking code for that. Emailed summaries are set up inside GA4 (Share, then Schedule email, on any report).
 
 Technical SEO makes the site crawlable and understandable. Search growth still depends on publishing useful, link-worthy pages and earning relevant references from GitHub, LinkedIn, talks, papers, and other sites.
+
+## License
+
+The site's source code is under the [MIT license](LICENSE). The writing, images, video and
+other media (the posts and pages in `src/` and the files in `public/media/` and
+`public/brands/`) are © Oney Erge, all rights reserved.
