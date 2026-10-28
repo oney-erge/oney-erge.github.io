@@ -4,6 +4,7 @@ name: CI
 # request -- so a broken dependency bump fails here instead of on main.
 on:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
