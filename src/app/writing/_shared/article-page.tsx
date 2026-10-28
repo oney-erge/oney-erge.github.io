@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
 import { FEED_ALTERNATES, SITE, SITE_YEAR } from "@/data/site";
-import { getSeries, getSeriesParts, getWritingPost, type WritingPost } from "@/data/writing";
+import { getSeries, getSeriesParts, getWritingPost, shareImagePath, type WritingPost } from "@/data/writing";
 import { PostFigures } from "./post-figures";
 import "./article.css";
 import styles from "./article-page.module.css";
@@ -14,15 +14,25 @@ function readArticle(slug: string) {
   return readFileSync(path.join(process.cwd(), "src/app/writing", slug, "article.html"), "utf8");
 }
 
+/** Plain text of the article's video transcript (<details class="transcript">), if it has one. */
+function videoTranscript(html: string) {
+  const block = /<details class="transcript">([\s\S]*?)<\/details>/.exec(html)?.[1];
+  if (!block) return undefined;
+  return [...block.matchAll(/<p>([\s\S]*?)<\/p>/g)]
+    .map((match) => match[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").trim())
+    .join(" ");
+}
+
 export function articleMetadata(slug: string, keywords: string[]): Metadata {
   const post = getWritingPost(slug);
+  const title = post.searchTitle ?? post.title;
   return {
-    title: post.title,
+    title,
     description: post.description,
     alternates: { canonical: post.href, ...FEED_ALTERNATES },
     keywords,
     openGraph: {
-      title: post.title,
+      title,
       description: post.description,
       type: "article",
       url: post.href,
@@ -31,13 +41,13 @@ export function articleMetadata(slug: string, keywords: string[]): Metadata {
       modifiedTime: post.dateModified,
       authors: [`${SITE}/`],
       tags: post.tags,
-      images: [{ url: post.socialImage, width: 1200, height: 630, alt: post.title }],
+      images: [{ url: shareImagePath(post), width: 1200, height: 630, alt: post.title, type: "image/png" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
+      title,
       description: post.description,
-      images: [post.socialImage],
+      images: [shareImagePath(post)],
     },
   };
 }
@@ -98,14 +108,16 @@ export function ArticlePage({ slug, about }: { slug: string; about: string[] }) 
   const post = getWritingPost(slug);
   const series = getSeries(post.seriesId);
   const canonical = `${SITE}${post.href}`;
+  const html = readArticle(slug);
   const schema = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "@id": `${canonical}#article`,
     headline: post.title,
+    ...(post.searchTitle ? { alternativeHeadline: post.searchTitle } : {}),
     description: post.description,
     url: canonical,
-    image: `${SITE}${post.socialImage}`,
+    image: `${SITE}${shareImagePath(post)}`,
     datePublished: post.datePublished,
     dateModified: post.dateModified,
     author: { "@id": `${SITE}/#person` },
@@ -117,6 +129,20 @@ export function ArticlePage({ slug, about }: { slug: string; about: string[] }) 
     position: post.part,
     keywords: post.tags,
     about,
+    ...(post.video
+      ? {
+          video: {
+            "@type": "VideoObject",
+            name: post.video.name,
+            description: post.video.description,
+            thumbnailUrl: `${SITE}${post.video.poster}`,
+            contentUrl: `${SITE}${post.video.src}`,
+            uploadDate: post.video.uploadDate,
+            duration: post.video.duration,
+            transcript: videoTranscript(html),
+          },
+        }
+      : {}),
   };
 
   return (
@@ -144,7 +170,7 @@ export function ArticlePage({ slug, about }: { slug: string; about: string[] }) 
           <a href="/">Home</a><span aria-hidden="true">/</span><a href="/writing/">Writing</a>
         </nav>
         <SeriesBar post={post} />
-        <div dangerouslySetInnerHTML={{ __html: readArticle(slug) }} />
+        <div dangerouslySetInnerHTML={{ __html: html }} />
         <SeriesFooter post={post} />
         <PostFigures />
       </main>

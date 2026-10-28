@@ -108,7 +108,7 @@ function inspectStructuredData(value, source) {
   }
 
   for (const [key, child] of Object.entries(value)) {
-    if (["dateCreated", "dateModified", "datePublished"].includes(key)) {
+    if (["dateCreated", "dateModified", "datePublished", "uploadDate"].includes(key)) {
       if (typeof child !== "string" || !isValidIsoDatetime(child)) {
         errors.push(`${source}: ${key} must be a full, valid ISO 8601 datetime.`);
       }
@@ -215,6 +215,7 @@ const htmlFiles = await listHtmlFiles(OUTPUT_DIR);
 const canonicalPages = new Map();
 const redirectStubs = new Map();
 let structuredDataDates = 0;
+let shareImages = 0;
 
 for (const file of htmlFiles) {
   if (isGeneratedErrorPage(file)) continue;
@@ -251,6 +252,24 @@ for (const file of htmlFiles) {
     }
   }
 
+  // Social preview images on this site must exist in the export (they are generated at build time).
+  for (const match of html.matchAll(/<meta\b[^>]*\bproperty="og:image"[^>]*\bcontent="([^"]+)"[^>]*>/gi)) {
+    let url;
+    try {
+      url = new URL(decodeHtml(match[1]));
+    } catch {
+      errors.push(`${expectedUrl}: invalid og:image URL ${match[1]}.`);
+      continue;
+    }
+    if (!SITE_HOSTNAMES.has(url.hostname)) continue;
+    try {
+      await access(localOutputPath(url));
+      shareImages += 1;
+    } catch {
+      errors.push(`${expectedUrl}: og:image ${url.href} has no generated file.`);
+    }
+  }
+
   for (const match of html.matchAll(
     /<script\b[^>]*\btype="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi,
   )) {
@@ -261,7 +280,7 @@ for (const file of htmlFiles) {
       if (errors.length === before) {
         const serialized = JSON.stringify(data);
         structuredDataDates += [
-          ...serialized.matchAll(/"date(?:Created|Modified|Published)":/g),
+          ...serialized.matchAll(/"(?:date(?:Created|Modified|Published)|uploadDate)":/g),
         ].length;
       }
     } catch (error) {
@@ -392,6 +411,6 @@ if (errors.length > 0) {
 console.log(
   `SEO check passed: ${canonicalPages.size} self-canonical pages, ` +
     `${redirectStubs.size} redirect stubs, ${sitemapUrls.size} sitemap URLs, ` +
-    `${feedItems} feed items, ${structuredDataDates} structured-data dates, ` +
+    `${feedItems} feed items, ${shareImages} share images, ${structuredDataDates} structured-data dates, ` +
     `and ${sitemapLastModifiedDates} sitemap dates validated.`,
 );

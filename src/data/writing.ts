@@ -17,6 +17,8 @@ export type WritingPost = {
   slug: string;
   href: string;
   title: string;
+  /** Page title for search results and link previews, when the visible title uses a label people do not search for. */
+  searchTitle?: string;
   /** One line used in series lists. */
   hook: string;
   description: string;
@@ -29,12 +31,22 @@ export type WritingPost = {
   dateLabel: string;
   readingTime: string;
   tags: string[];
-  socialImage: string;
+  /** Figure shown on the post's share card (share.png in its folder). */
   cover: {
     label: string;
     metric: string;
     caption: string;
     note: string;
+  };
+  /** The narrated video embedded in article.html, described to search engines as a VideoObject. */
+  video?: {
+    name: string;
+    description: string;
+    src: string;
+    poster: string;
+    /** ISO 8601 duration, e.g. "PT3M". */
+    duration: string;
+    uploadDate: string;
   };
 };
 
@@ -50,8 +62,8 @@ export const writingSeries: WritingSeries[] = [
     description:
       "Four articles on fitting a model, reserving context memory, moving weights, and choosing their placement.",
     trailer: {
-      src: "/media/h65-explainer-1min.mp4",
-      title: "Video overview · 1 min",
+      src: "/media/h65-explainer-3min.mp4",
+      title: "Video overview · 3 min",
     },
   },
   {
@@ -81,7 +93,6 @@ const allPosts: WritingPost[] = [
     dateLabel: "September 13, 2026",
     readingTime: "6 min read",
     tags: ["GPU memory", "LLM inference", "BF16"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "Model memory map",
       metric: "29.5 GB",
@@ -104,7 +115,6 @@ const allPosts: WritingPost[] = [
     dateLabel: "October 14, 2026",
     readingTime: "5 min read",
     tags: ["KV cache", "LLM inference", "Streaming"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "KV cache",
       metric: "5.4 GB",
@@ -127,7 +137,6 @@ const allPosts: WritingPost[] = [
     dateLabel: "October 14, 2026",
     readingTime: "5 min read",
     tags: ["Memory hierarchy", "Lossless compression", "Prefetching"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "Weight transfer",
       metric: "2.3 GB/s",
@@ -139,23 +148,32 @@ const allPosts: WritingPost[] = [
     slug: "schedule-aware-exact-weight-placement",
     href: "/writing/schedule-aware-exact-weight-placement/",
     title: "How H6.5 Optimizes Weight Placement",
+    searchTitle: "Exact Weight Placement for LLMs with Limited GPU Memory (H6.5)",
     hook: "H6.5 chooses where to keep model weights so the GPU spends less time waiting for them.",
     description:
-      "How H6.5 searches for weight placements that reduce GPU waits, with measured memory and latency results.",
+      "How H6.5 decides which LLM weights stay on the GPU, in RAM, or on the SSD, so Llama-3.3-70B on a 32 GB GPU waits less: 23% lower peak GPU memory and about 13% faster requests.",
     seriesId: "small-gpus",
     part: 4,
     status: "published",
     datePublished: "2026-10-14T18:00:00-05:00",
-    dateModified: "2026-10-22T12:04:43-05:00",
+    dateModified: "2026-10-27T20:07:02-05:00",
     dateLabel: "October 14, 2026",
     readingTime: "5 min read",
     tags: ["Weight placement", "H6.5"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "H6.5 result",
       metric: "−23%",
       caption: "Peak GPU memory · Llama-3.3-70B",
       note: "Lower in all 20 matched requests",
+    },
+    video: {
+      name: "H6.5 explained in 3 minutes: exact weight placement on limited GPU memory",
+      description:
+        "Why a 141 GB model has to stream its weights to a 32 GB GPU, why that trip makes the GPU wait, and how H6.5 chooses which weights to keep close.",
+      src: "/media/h65-explainer-3min.mp4",
+      poster: "/media/h65-explainer-poster.jpg",
+      duration: "PT3M",
+      uploadDate: "2026-10-14T18:00:00-05:00",
     },
   },
   {
@@ -173,7 +191,6 @@ const allPosts: WritingPost[] = [
     dateLabel: "October 14, 2026",
     readingTime: "6 min read",
     tags: ["Speculative decoding", "LLM inference", "Streaming"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "Fixed speculation",
       metric: "9.2 s",
@@ -196,7 +213,6 @@ const allPosts: WritingPost[] = [
     dateLabel: "October 14, 2026",
     readingTime: "4 min read",
     tags: ["Speculative decoding", "Self-speculation", "Token trees"],
-    socialImage: "/media/afterimage-social.png",
     cover: {
       label: "Variants",
       metric: "3 choices",
@@ -224,6 +240,11 @@ export function getSeriesParts(id: string): WritingPost[] {
 
 export function seriesLabel(post: WritingPost): string {
   return `${getSeries(post.seriesId).title} · Part ${post.part}`;
+}
+
+/** The post's social preview image, drawn at build time by its share.png route. */
+export function shareImagePath(post: WritingPost): string {
+  return `${post.href}share.png`;
 }
 
 export function getWritingPost(slug: string): WritingPost {

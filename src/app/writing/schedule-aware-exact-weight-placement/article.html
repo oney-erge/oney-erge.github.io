@@ -2,26 +2,28 @@
   <header class="col hero">
     <h1>How H6.5 Optimizes Weight Placement</h1>
     <p class="deck">H6.5 chooses where to keep model weights so the GPU spends less time waiting for them. The weights themselves remain unchanged.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>5 min read</span><span>1 min video</span></div>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-14">October 14, 2026</time><span>5 min read</span><span>3 min video</span></div>
   </header>
 
   <div class="wide block">
     <figure class="video" aria-labelledby="video-cap">
       <video controls preload="metadata" playsinline poster="/media/h65-explainer-poster.jpg">
-        <source src="/media/h65-explainer-1min.mp4" type="video/mp4">
-        <a href="/media/h65-explainer-1min.mp4">Download the 1-minute video (MP4, 6 MB)</a>
+        <source src="/media/h65-explainer-3min.mp4" type="video/mp4">
+        <a href="/media/h65-explainer-3min.mp4">Download the 3-minute video (MP4, 16 MB)</a>
       </video>
-      <figcaption id="video-cap"><b>Video overview.</b> I used Claude Code to create this video from the paper. <a href="/media/h65-explainer-3min.mp4">Longer version (3 min)</a>.</figcaption>
+      <figcaption id="video-cap"><b>Video overview.</b> I used Claude Code to create this video from the paper. <a href="/media/h65-explainer-1min.mp4">Short version (1 min)</a>.</figcaption>
       <details class="transcript">
         <summary>Transcript</summary>
-        <p>Llama-3.3-70B needs 141 GB of weights. An RTX 5090 has 32 GB.</p>
-        <p>So the weights wait on the SSD and in RAM, and travel to the GPU, layer by layer.</p>
-        <p>That trip is slow: read, unpack, copy. When a layer arrives late, the GPU sits idle.</p>
-        <p>Spare GPU and RAM space can keep some weights close. H6.5 decides which of the 723 tensors get it.</p>
-        <p>Size is the wrong guide. Take two layers of the same size. Keeping the blue one on the GPU saves nothing. Keeping the orange one saves 2 seconds, because its trip made the GPU wait.</p>
-        <p>So H6.5 records one real request, replays it for about 1,800 placements, and keeps the fastest.</p>
-        <p>It placed 198 of 723 tensors differently: 23% less peak GPU memory, and about 13% faster.</p>
-        <p>Spend scarce GPU memory on the weights that make the GPU wait.</p>
+        <p>Llama-3.3-70B needs about 141 GB for its weights. An RTX 5090 has 32 GB. So how do you run a model that does not fit on the GPU?</p>
+        <p>A PC keeps data in three places. The SSD is huge but slow, RAM is in between, and GPU memory is small, but it is where the GPU does its math. So a weight on the SSD travels to RAM, then over the PCIe link into GPU memory.</p>
+        <p>You could round the weights to fewer bits, but then it is no longer the exact model. Tools like Accelerate and AirLLM keep the exact weights off the GPU and stream them in, layer by layer. The good ones load the next layer while the GPU computes the current one.</p>
+        <p>But that trip is slow: compressed weights must be read, unpacked, then copied. In one real request, reading the 2.1 GB output head took 1.25 s, and unpacking it 0.31 s. When a layer arrives late, the GPU sits idle.</p>
+        <p>There is one lever: spare room, about 5 GB on the GPU and 16 GB in RAM. Weights kept there skip the trip. But there are 723 weight tensors, each with several places it could live. H6.5 decides where each one lives, within those budgets, so the request finishes as early as possible.</p>
+        <p>The usual rule keeps whatever saves the most data movement. But less data is not always less waiting. Scenario one: two layers of the same size. The blue one arrives while the GPU is still busy. The orange one arrives 2 s late. Keeping the blue one on the GPU saves nothing. Keeping the orange one saves 2 seconds.</p>
+        <p>Scenario two, from the real run: the output head is read only after the last layer, so the GPU waits 1.56 s at the end. A rule based on bytes leaves it on the SSD. With the head on the GPU, the same schedule ends 1.56 s sooner. And there are many more: change the model, the GPU, the budget or the answer length, and the best placement changes.</p>
+        <p>So H6.5 uses no fixed rule. It records one real request: every read, unpack, copy and computation. Then it replays that recording for each candidate placement, to predict the finish time. It scores about 1,800 placements in seconds, keeps the best, and freezes it for live requests.</p>
+        <p>On the RTX 5090, with the same budgets, it placed 198 of the 723 tensors differently, including the output head, now on the GPU. Over 20 matched requests, peak GPU memory fell 23%, in every one, and requests ran about 13% faster. On a laptop GPU with other models, it picked a different plan, and still cut peak GPU memory by 12 to 13%.</p>
+        <p>Don't spend scarce GPU memory on the weights that move the most data. Spend it on the weights that make the GPU wait.</p>
       </details>
     </figure>
   </div>
@@ -184,7 +186,7 @@
   <section class="col prose refs-section" aria-labelledby="h-refs">
     <h2 id="h-refs">References</h2>
     <ol class="refs">
-      <li id="ref-1"><span>O. Erge. 2026. “Schedule-Aware Exact Weight Placement for Large Language Models with Limited GPU Memory.” Submitted to arXiv (cs.PF), October 2026. <em>Forthcoming preprint; the link will be added when it is announced.</em></span></li>
+      <li id="ref-1"><span>O. Erge. 2026. “<a href="https://doi.org/10.5281/zenodo.23322525">Schedule-Aware Exact Weight Placement for Large Language Models with Limited GPU Memory</a>.” Preprint, Zenodo. doi:10.5281/zenodo.23322525.</span></li>
       <li id="ref-2"><span>O. Erge, <a href="https://github.com/oney-erge/Afterimage">Afterimage</a>. Paper evidence, frozen placements, and the verifier in <a href="https://github.com/oney-erge/Afterimage/tree/main/evidence/h65-paper1"><code>evidence/h65-paper1</code></a>.</span></li>
       <li id="ref-3"><span>Y. Sheng et al. 2023. “<a href="https://proceedings.mlr.press/v202/sheng23a.html">FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU</a>.” ICML 2023.</span></li>
       <li id="ref-4"><span>Hugging Face. “<a href="https://huggingface.co/docs/accelerate/usage_guides/big_modeling">Big Model Inference</a>.” Accelerate documentation.</span></li>

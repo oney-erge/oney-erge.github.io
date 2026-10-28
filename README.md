@@ -36,6 +36,8 @@ The earlier `/work/<slug>/` case-study pages are retired. GitHub Pages cannot se
 
 The site emits canonical URLs, crawl directives, a root sitemap with image entries, profile and article structured data, descriptive social previews, and an RSS feed for the writing at `/feed.xml`.
 
+Each article has its own social preview image at `/writing/<slug>/share.png`. Its `share.png/route.tsx` draws the card at build time from the post's title and `cover` figure in `src/data/writing.ts` (see `src/app/writing/_shared/share-card.tsx`; the Geist font files and their OFL license are in `_shared/fonts`). A new article needs the same one-line route.
+
 After the first deployment:
 
 1. Verify `oneyerge.com` as a Domain property in Google Search Console using the DNS record Google provides.
