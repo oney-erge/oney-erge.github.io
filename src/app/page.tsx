@@ -387,7 +387,7 @@ export default function Home() {
         <section className={`${styles.section} ${styles.writing}`} id="writing" aria-labelledby="writing-heading">
           <header className={styles.sectionHeader}>
             <h2 id="writing-heading">Writing</h2>
-            <p>Notes on LLM inference, memory use, and performance.</p>
+            <p>Notes on LLM inference, memory use, performance, and local agents.</p>
           </header>
           <div className={styles.writingColumns}>
             {writingSeries.map((series) => (

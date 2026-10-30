@@ -74,6 +74,14 @@ export const writingSeries: WritingSeries[] = [
     description:
       "Two articles on using draft models to reduce expensive target-model passes.",
   },
+  {
+    id: "local-agents",
+    title: "Running an Agent on a Laptop",
+    collectionLabel: "Local agents",
+    itemLabel: "Article",
+    description:
+      "Measured choices for an agent that runs on a laptop: which model does which job, and what it costs.",
+  },
 ];
 
 /** Every post, published or upcoming, in series order. */
@@ -218,6 +226,29 @@ const allPosts: WritingPost[] = [
       metric: "3 choices",
       caption: "In every speculative decoder",
       note: "Draft source, length, and shape",
+    },
+  },
+  {
+    slug: "decision-model-message-routing",
+    href: "/writing/decision-model-message-routing/",
+    title: "How a Decision Model Routes Agent Messages on a CPU",
+    searchTitle: "Routing LLM Agent Messages with a Small Decision Model on a CPU",
+    hook: "An 8B LLM took about 15 seconds to decide what each message to my local agent was. A 0.85B decision model did it on the CPU in half a second.",
+    description:
+      "A comparison of open decision models for routing a local agent's messages, measured on a laptop CPU and GPU against an 8B LLM, with the data.",
+    seriesId: "local-agents",
+    part: 1,
+    status: "published",
+    datePublished: "2026-10-29T18:00:00-05:00",
+    dateModified: "2026-10-29T18:00:00-05:00",
+    dateLabel: "October 29, 2026",
+    readingTime: "4 min read",
+    tags: ["Decision models", "LLM agents", "llama.cpp"],
+    cover: {
+      label: "Message routing",
+      metric: "0.5 s",
+      caption: "d3-lite · 8 CPU threads",
+      note: "The 8B LLM takes about 15 s",
     },
   },
 ];
