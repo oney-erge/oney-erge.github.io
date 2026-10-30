@@ -1,162 +1,91 @@
 <article class="post" id="post-root">
   <header class="col hero">
-    <h1>How a Decision Model Routes Agent Messages on a CPU</h1>
-    <p class="deck">My local agent asks an 8B LLM what every message is and waits about 15&nbsp;s for the answer. A 0.85B decision model answered the same question on the laptop's CPU in half a second, about as accurately. This note shows the test on 141 messages, and where the small model falls short.</p>
-    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-29">October 29, 2026</time><span>4 min read</span></div>
+    <h1>Routing Agent Messages with a Local Decision Model</h1>
+    <p class="deck">My agent waited about 15&nbsp;s for an 8B LLM to classify every message. I tested local decision models for the job. The best fit, d3-lite, does it in half a second on the CPU, just as accurately.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-10-29">October 29, 2026</time><span>3 min read</span></div>
   </header>
 
   <div class="col prose">
-    <p>I run YBM, an agent on my laptop that I message on Telegram <a class="cite" href="#ref-7">[7]</a>. Before it can act, it must decide what a message is: chat, a question about its own work, or a task, and for a task, which of its tools to use. YBM calls these 15 choices <strong>routes</strong>.</p>
-    <p>Today an LLM makes that call: Qwen3-VL 8B <a class="cite" href="#ref-6">[6]</a>, which fills the laptop's 8&nbsp;GB GPU and runs a third of its layers on the CPU. It takes about 15&nbsp;s per message, before YBM even replies "on it", and it reports a confidence of 0.95 to 1.00 whether it is right or wrong, so YBM cannot tell a sure answer from a guess.</p>
-    <p>With the GPU full, and swapping models in and out slower than the answer itself, anything faster has to run on the CPU, in under 2&nbsp;s per message.</p>
+    <p>I built <a href="https://github.com/oney-erge/YBM">YBM</a>, an agent that runs on my laptop and does things on my computer when I message it on Telegram. Before it acts, it has to classify each message: is it chat, a question about its own progress, or a task, and which of its tools does the task need? There are 15 such routes.</p>
+    <p>An 8B LLM made that call, and it was slow: about 15&nbsp;s per message before YBM could even start the work, on a GPU it shares with the model doing that work.</p>
   </div>
 
-  <section class="col prose" aria-labelledby="h-model">
-    <h2 id="h-model">A model that picks an option instead of writing text</h2>
-    <p>A <strong>decision model</strong> reads a text and a question with a fixed list of options, then returns a probability for each option in one pass, without generating any words <a class="cite" href="#ref-1">[1]</a>. Routing is that kind of question: here are 15 routes with one-line descriptions; which one fits this message?</p>
-    <p>The probability helps only if it is honest. A well-calibrated model is right about 90% of the time when it says 90% <a class="cite" href="#ref-4">[4]</a>, so an agent can act on sure answers and ask the LLM about the rest.</p>
-    <p>The main family I tested is d3 from the vLLM Semantic Router project, from 0.59B to 4.5B parameters, under the Apache-2.0 license <a class="cite" href="#ref-1">[1]</a>. llama.cpp has served these models since October 12, 2026 <a class="cite" href="#ref-2">[2]</a>, so no Python model code runs. I also tested LiquidAI's d1 models <a class="cite" href="#ref-3">[3]</a> and five other open models. On the CPU the biggest speed gain came from <strong>quantization</strong>, storing each weight in about 4 bits instead of 8: it halved the time at the same accuracy.</p>
+  <section class="col prose" aria-labelledby="h-why">
+    <h2 id="h-why">Why a decision model</h2>
+    <p>A <strong>decision model</strong> is built for this kind of question. It reads a text and a list of options and returns a probability for each option in one pass, without writing any text, so it is fast <a class="cite" href="#ref-1">[1]</a>.</p>
+    <p>I wanted one that runs on my own machine rather than in the cloud, so I served each candidate with <a href="https://github.com/oney-erge/LocalDeploy">LocalDeploy</a>, my local model server, through llama.cpp <a class="cite" href="#ref-2">[2]</a>. I tested 11 open models, from 0.14B to 4.5B parameters, against the LLM YBM was using. I am sharing the results in case they help someone with the same problem.</p>
   </section>
 
   <section class="col prose" aria-labelledby="h-test">
-    <h2 id="h-test">Two sets of messages</h2>
-    <p>I wrote 98 messages that cover all 15 routes, from "hi" to "rename the photos in Pictures by date", and labeled each one. Because I also wrote the route descriptions while looking at these messages, they may flatter every model.</p>
-    <p>So I scored the finalists on 43 messages I had not written for this test: YBM's end-to-end test catalogue. Their labels follow a fixed rule, the tools each test requires, and were committed before any model saw them.</p>
-    <p>I counted the share of messages sent to the right route, the real tasks answered as chat (the mistake that makes an agent silently do nothing), and the median time per message on 8 threads of a Ryzen 9 5900HS. I repeated the runs of the leading models; d3-lite gave identical answers in all three of its runs.</p>
+    <h2 id="h-test">The test</h2>
+    <p>Each test is one message and one question. For example:</p>
   </section>
 
-  <section class="col prose" aria-labelledby="h-results">
-    <h2 id="h-results">The results</h2>
-    <p>Only d3-lite was both under my limit and as accurate as the rest: 93% of the 98 messages in 0.5&nbsp;s (Figure 1). The LLM got 92% in 15&nbsp;s, and its confidence stayed between 0.95 and 1.00 for right and wrong answers alike.</p>
-  </section>
-
-  <div class="wide block">
-    <figure class="lanes" aria-labelledby="speed-cap">
-      <div class="fig-wide"><svg viewBox="0 0 800 330" class="fit" role="img" aria-label="Median time per message against the share of 98 messages sent to the right route. d3-lite 0.85B: 93% in 0.5 seconds; d3-edge 0.59B: 78% in 0.9 seconds; d3-nano 2.2B: 93% in 2.0 seconds; d1-3B: 83% in 2.6 seconds; d3-mini 4.5B: 95% in 7.8 seconds; 8B LLM: 92% in 15.3 seconds.">
-<line class="c-grid" x1="62" y1="274.0" x2="776" y2="274.0"/>
-<text class="c-text" x="54" y="278.0" text-anchor="end">70%</text>
-<line class="c-grid" x1="62" y1="191.3" x2="776" y2="191.3"/>
-<text class="c-text" x="54" y="195.3" text-anchor="end">80%</text>
-<line class="c-grid" x1="62" y1="108.7" x2="776" y2="108.7"/>
-<text class="c-text" x="54" y="112.7" text-anchor="end">90%</text>
-<line class="c-grid" x1="62" y1="26.0" x2="776" y2="26.0"/>
-<text class="c-text" x="54" y="30.0" text-anchor="end">100%</text>
-<line class="c-grid" x1="62.0" y1="26" x2="62.0" y2="274"/>
-<text class="c-text" x="62.0" y="292" text-anchor="middle">0.2 s</text>
-<line class="c-grid" x1="197.5" y1="26" x2="197.5" y2="274"/>
-<text class="c-text" x="197.5" y="292" text-anchor="middle">0.5 s</text>
-<line class="c-grid" x1="300.0" y1="26" x2="300.0" y2="274"/>
-<text class="c-text" x="300.0" y="292" text-anchor="middle">1 s</text>
-<line class="c-grid" x1="402.5" y1="26" x2="402.5" y2="274"/>
-<text class="c-text" x="402.5" y="292" text-anchor="middle">2 s</text>
-<line class="c-grid" x1="538.0" y1="26" x2="538.0" y2="274"/>
-<text class="c-text" x="538.0" y="292" text-anchor="middle">5 s</text>
-<line class="c-grid" x1="640.5" y1="26" x2="640.5" y2="274"/>
-<text class="c-text" x="640.5" y="292" text-anchor="middle">10 s</text>
-<line class="c-grid" x1="743.0" y1="26" x2="743.0" y2="274"/>
-<text class="c-text" x="743.0" y="292" text-anchor="middle">20 s</text>
-<line class="c-cap" x1="402.5" y1="26" x2="402.5" y2="274"/>
-<text class="c-text" x="396.5" y="18" text-anchor="end">my 2 s limit</text>
-<text class="c-label" x="419" y="318" text-anchor="middle">Median time per message (log scale)</text>
-<text class="c-label" x="13" y="150" text-anchor="middle" transform="rotate(-90 13 150)">Right route, 98 messages</text>
-<circle class="c-mark" cx="206.1" cy="84.7" r="9"/>
-<text class="c-label" x="194.1" y="72.7" text-anchor="end">d3-lite 0.85B</text>
-<circle class="tl-blue" cx="287.7" cy="211.2" r="7"/>
-<text class="c-label" x="299.7" y="215.2" text-anchor="start">d3-edge 0.59B</text>
-<circle class="tl-blue" cx="405.4" cy="84.7" r="7"/>
-<text class="c-label" x="417.4" y="102.7" text-anchor="start">d3-nano 2.2B</text>
-<circle class="tl-blue" cx="442.4" cy="169.0" r="7"/>
-<text class="c-label" x="454.4" y="173.0" text-anchor="start">d1-3B</text>
-<circle class="tl-blue" cx="603.2" cy="68.2" r="7"/>
-<text class="c-label" x="603.2" y="54.2" text-anchor="middle">d3-mini 4.5B</text>
-<circle class="tl-orange" cx="703.4" cy="93.8" r="7"/>
-<text class="c-label" x="703.4" y="117.8" text-anchor="middle">8B LLM</text>
-</svg></div>
-      <div class="fig-narrow"><svg viewBox="0 0 400 380" class="fit" role="img" aria-label="Median time per message against the share of 98 messages sent to the right route. d3-lite 0.85B: 93% in 0.5 seconds; d3-edge 0.59B: 78% in 0.9 seconds; d3-nano 2.2B: 93% in 2.0 seconds; d1-3B: 83% in 2.6 seconds; d3-mini 4.5B: 95% in 7.8 seconds; 8B LLM: 92% in 15.3 seconds.">
-<line class="c-grid" x1="48" y1="324.0" x2="386" y2="324.0"/>
-<text class="c-text" x="40" y="328.0" text-anchor="end">70%</text>
-<line class="c-grid" x1="48" y1="224.7" x2="386" y2="224.7"/>
-<text class="c-text" x="40" y="228.7" text-anchor="end">80%</text>
-<line class="c-grid" x1="48" y1="125.3" x2="386" y2="125.3"/>
-<text class="c-text" x="40" y="129.3" text-anchor="end">90%</text>
-<line class="c-grid" x1="48" y1="26.0" x2="386" y2="26.0"/>
-<text class="c-text" x="40" y="30.0" text-anchor="end">100%</text>
-<line class="c-grid" x1="48.0" y1="26" x2="48.0" y2="324"/>
-<text class="c-text" x="48.0" y="342" text-anchor="middle">0.2 s</text>
-<line class="c-grid" x1="160.7" y1="26" x2="160.7" y2="324"/>
-<text class="c-text" x="160.7" y="342" text-anchor="middle">1 s</text>
-<line class="c-grid" x1="209.2" y1="26" x2="209.2" y2="324"/>
-<text class="c-text" x="209.2" y="342" text-anchor="middle">2 s</text>
-<line class="c-grid" x1="273.3" y1="26" x2="273.3" y2="324"/>
-<text class="c-text" x="273.3" y="342" text-anchor="middle">5 s</text>
-<line class="c-grid" x1="370.4" y1="26" x2="370.4" y2="324"/>
-<text class="c-text" x="370.4" y="342" text-anchor="middle">20 s</text>
-<line class="c-cap" x1="209.2" y1="26" x2="209.2" y2="324"/>
-<text class="c-text" x="203.2" y="18" text-anchor="end">my 2 s limit</text>
-<text class="c-label" x="217" y="368" text-anchor="middle">Median time per message (log scale)</text>
-<text class="c-label" x="13" y="175" text-anchor="middle" transform="rotate(-90 13 175)">Right route, 98 messages</text>
-<circle class="c-mark" cx="116.2" cy="96.5" r="8"/>
-<text class="c-label" x="116.2" y="82.5" text-anchor="middle">d3-lite 0.85B</text>
-<circle class="tl-blue" cx="154.8" cy="248.5" r="6"/>
-<text class="c-label" x="166.8" y="252.5" text-anchor="start">d3-edge 0.59B</text>
-<circle class="tl-blue" cx="210.6" cy="96.5" r="6"/>
-<text class="c-label" x="220.6" y="114.5" text-anchor="start">d3-nano 2.2B</text>
-<circle class="tl-blue" cx="228.1" cy="197.8" r="6"/>
-<text class="c-label" x="240.1" y="201.8" text-anchor="start">d1-3B</text>
-<circle class="tl-blue" cx="304.2" cy="76.7" r="6"/>
-<text class="c-label" x="304.2" y="62.7" text-anchor="middle">d3-mini 4.5B</text>
-<circle class="tl-orange" cx="351.6" cy="107.5" r="6"/>
-<text class="c-label" x="341.6" y="129.5" text-anchor="end">8B LLM</text>
-</svg></div>
-      <figcaption id="speed-cap"><b>Figure 1.</b> Share of the 98 messages sent to the right route against the median time per message. Decision models ran on 8 CPU threads in llama.cpp, at 4-bit (Q4_K_M) except d3-edge (8-bit); the LLM ran in Ollama, about two thirds on the GPU. Measured on my laptop <a class="cite" href="#ref-7">[7]</a>.</figcaption>
-    </figure>
+  <div class="col block">
+    <dl class="routing-example">
+      <dt>Message</dt><dd>"remind me tomorrow at 9am to send the budget draft"</dd>
+      <dt>Question</dt><dd>Which route should handle this message? 15 options, each with a one-line description, such as "chat", "files and folders", "open a site, web search" and "reminders and recurring jobs".</dd>
+      <dt>d3-lite's answer</dt><dd>"reminders and recurring jobs", 98% sure, in 0.6&nbsp;s</dd>
+    </dl>
   </div>
 
   <div class="col prose">
-    <p>Table 1 adds the held-out messages. They were harder for every model: long requests with several steps. There the LLM was slightly ahead, 88% against 84% for d3-lite: two messages out of 43, within the noise of so small a set. Every d3-lite miss on these messages came with a probability of 0.87 or less. Its probabilities are not always honest, though: it sent "can you read PDFs?" to the document tools at 98%.</p>
+    <p>I wrote 98 messages like this, covering all 15 routes, and counted how many each model routed correctly. Everything ran on one laptop: a Ryzen 9 5900HS with 8 CPU threads in use, and an RTX 3080 Laptop GPU with 8&nbsp;GB. The models were quantized to 4 or 8 bits per weight (Q4_K_M or Q8_0), which makes them smaller and faster.</p>
   </div>
 
-  <div class="col block">
-    <p class="tcap"><b>Table 1.</b> Messages sent to the right route, with 95% intervals <a class="cite" href="#ref-5">[5]</a>, and real tasks answered as chat across both sets. Decision models at 4-bit through llama.cpp. Source: <a class="cite" href="#ref-7">[7]</a>.</p>
+  <section class="col prose" aria-labelledby="h-results">
+    <h2 id="h-results">Results</h2>
+  </section>
+
+  <div class="wide block">
+    <p class="tcap"><b>Table 1.</b> Median time to route one message and the share of the 98 messages routed correctly. d3-lite uses the one-line route descriptions YBM ships; with longer ones it was as accurate but twice as slow on the CPU. Data: <a class="cite" href="#ref-5">[5]</a>.</p>
     <div class="tablewrap">
       <table class="responsive-table">
-        <thead><tr><th scope="col">Model</th><th scope="col">Runs on</th><th scope="col" class="num">98 messages</th><th scope="col" class="num">43 held-out</th><th scope="col" class="num">Median time</th><th scope="col" class="num">Tasks as chat</th></tr></thead>
+        <thead><tr><th scope="col">Model</th><th scope="col">Size</th><th scope="col">Quantization</th><th scope="col" class="num">CPU time</th><th scope="col" class="num">GPU time</th><th scope="col" class="num">Correct</th></tr></thead>
         <tbody>
-          <tr><th scope="row">8B LLM (Qwen3-VL)</th><td data-label="Runs on">GPU and CPU</td><td data-label="98 messages" class="num">92% (85-96%)</td><td data-label="43 held-out" class="num">88% (76-95%)</td><td data-label="Median time" class="num">15&nbsp;s</td><td data-label="Tasks as chat" class="num">2</td></tr>
-          <tr><th scope="row">d3-lite 0.85B</th><td data-label="Runs on">CPU</td><td data-label="98 messages" class="num">93% (86-96%)</td><td data-label="43 held-out" class="num">84% (70-92%)</td><td data-label="Median time" class="num">0.5&nbsp;s</td><td data-label="Tasks as chat" class="num">0</td></tr>
-          <tr><th scope="row">d3-nano 2.2B</th><td data-label="Runs on">CPU</td><td data-label="98 messages" class="num">93% (86-96%)</td><td data-label="43 held-out" class="num">86% (73-93%)</td><td data-label="Median time" class="num">2.0&nbsp;s</td><td data-label="Tasks as chat" class="num">0</td></tr>
-          <tr><th scope="row">d3-mini 4.5B</th><td data-label="Runs on">CPU</td><td data-label="98 messages" class="num">95% (89-98%)</td><td data-label="43 held-out" class="num">93% (81-98%)</td><td data-label="Median time" class="num">7.8&nbsp;s</td><td data-label="Tasks as chat" class="num">0</td></tr>
-          <tr><th scope="row">d3-mini 4.5B</th><td data-label="Runs on">GPU</td><td data-label="98 messages" class="num">95% (89-98%)</td><td data-label="43 held-out" class="num">95% (85-99%)</td><td data-label="Median time" class="num">0.2&nbsp;s</td><td data-label="Tasks as chat" class="num">0</td></tr>
-          <tr><th scope="row">d1-3B</th><td data-label="Runs on">CPU</td><td data-label="98 messages" class="num">83% (74-89%)</td><td data-label="43 held-out" class="num">72% (57-83%)</td><td data-label="Median time" class="num">2.6&nbsp;s</td><td data-label="Tasks as chat" class="num">3</td></tr>
+          <tr><th scope="row">Qwen3-VL 8B, the LLM <a class="cite" href="#ref-4">[4]</a></th><td data-label="Size">8B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">not run</td><td data-label="GPU time" class="num">15&nbsp;s*</td><td data-label="Correct" class="num">92%</td></tr>
+          <tr><th scope="row">d3-mini <a class="cite" href="#ref-1">[1]</a></th><td data-label="Size">4.5B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">7.8&nbsp;s</td><td data-label="GPU time" class="num">0.17&nbsp;s</td><td data-label="Correct" class="num">95%</td></tr>
+          <tr><th scope="row">Kev-4B</th><td data-label="Size">4B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">7.9&nbsp;s</td><td data-label="GPU time" class="num">4.6&nbsp;s**</td><td data-label="Correct" class="num">94%</td></tr>
+          <tr class="pick"><th scope="row">d3-lite <a class="cite" href="#ref-1">[1]</a>, my choice</th><td data-label="Size">0.85B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">0.53&nbsp;s</td><td data-label="GPU time" class="num">0.04&nbsp;s</td><td data-label="Correct" class="num">93%</td></tr>
+          <tr><th scope="row">d3-nano <a class="cite" href="#ref-1">[1]</a></th><td data-label="Size">2.2B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">2.0&nbsp;s</td><td data-label="GPU time" class="num">0.08&nbsp;s</td><td data-label="Correct" class="num">93%</td></tr>
+          <tr><th scope="row">lev</th><td data-label="Size">4B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">16&nbsp;s</td><td data-label="GPU time" class="num">0.36&nbsp;s</td><td data-label="Correct" class="num">91%</td></tr>
+          <tr><th scope="row">Kev-0.8B</th><td data-label="Size">0.8B</td><td data-label="Quantization">Q8_0</td><td data-label="CPU time" class="num">2.2&nbsp;s</td><td data-label="GPU time" class="num">0.11&nbsp;s</td><td data-label="Correct" class="num">86%</td></tr>
+          <tr><th scope="row">d1-3B <a class="cite" href="#ref-3">[3]</a></th><td data-label="Size">3.1B</td><td data-label="Quantization">Q4_K_M</td><td data-label="CPU time" class="num">2.6&nbsp;s</td><td data-label="GPU time" class="num">0.09&nbsp;s</td><td data-label="Correct" class="num">83%</td></tr>
+          <tr><th scope="row">d3-edge <a class="cite" href="#ref-1">[1]</a></th><td data-label="Size">0.59B</td><td data-label="Quantization">Q8_0</td><td data-label="CPU time" class="num">0.92&nbsp;s</td><td data-label="GPU time" class="num">0.03&nbsp;s</td><td data-label="Correct" class="num">78%</td></tr>
+          <tr><th scope="row">d1-omni-600M <a class="cite" href="#ref-3">[3]</a></th><td data-label="Size">0.59B</td><td data-label="Quantization">Q8_0</td><td data-label="CPU time" class="num">1.1&nbsp;s</td><td data-label="GPU time" class="num">0.03&nbsp;s</td><td data-label="Correct" class="num">56%</td></tr>
+          <tr><th scope="row">Laya</th><td data-label="Size">0.42B</td><td data-label="Quantization">Q8_0</td><td data-label="CPU time" class="num">0.59&nbsp;s</td><td data-label="GPU time" class="num">0.02&nbsp;s</td><td data-label="Correct" class="num">28%</td></tr>
+          <tr><th scope="row">Julia-1</th><td data-label="Size">0.14B</td><td data-label="Quantization">Q8_0</td><td data-label="CPU time" class="num">0.14&nbsp;s</td><td data-label="GPU time" class="num">0.02&nbsp;s</td><td data-label="Correct" class="num">8%</td></tr>
         </tbody>
       </table>
     </div>
+    <p class="note">* The LLM does not fit in 8&nbsp;GB, so about a third of it ran on the CPU. ** Kev-4B also filled the GPU. The d1 models use LiquidAI's LFM Open License; the others are Apache-2.0.</p>
   </div>
 
-  <section class="col prose" aria-labelledby="h-both">
-    <h2 id="h-both">Using both models</h2>
-    <p>The two models make different mistakes: on the 98 messages, d3-lite got 5 right that the LLM missed, and the LLM got 4 right that d3-lite missed. YBM now has one setting with four choices: the LLM alone; the decision model recorded beside the LLM for comparison; the decision model alone on clear task routes; or the decision model first on every message it is at least 90% sure of, with the LLM taking the rest and still writing chat replies.</p>
-    <p>Replayed on the recorded answers and times, the last choice kept the LLM's accuracy on both sets, while the decision model settled 69 of the 141 messages alone, 2 of them wrongly, in 0.6&nbsp;s instead of 15 to 17&nbsp;s. A message that arrives while a task is running always goes to the LLM, because it may be a correction to that task.</p>
-    <p>On the real Telegram bot, the decision model routed 4 of 11 messages alone in under a second, and 6 of 7 end-to-end test tasks passed. The one failure was a message the LLM had routed.</p>
-    <p>Kept running, d3-lite holds about 1&nbsp;GB of RAM and 2% of one CPU core. With the 8B model generating text without pause, d3-lite's median time rose to 1.1&nbsp;s and the 8B slowed by a fifth. That is a worst case: in normal use there is one decision per message.</p>
-  </section>
+  <div class="wide block">
+    <figure class="hbars" aria-labelledby="speed-cap">
+      <div class="hbar-row llm"><div class="hbar-head"><span class="hbar-name">Qwen3-VL 8B LLM</span><span class="hbar-value">15&nbsp;s, 92% correct</span></div><div class="hbar-track"><div class="hbar-fill" style="width:100%"></div></div></div>
+      <div class="hbar-row"><div class="hbar-head"><span class="hbar-name">d3-mini 4.5B</span><span class="hbar-value">7.8&nbsp;s, 95%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:51%"></div></div></div>
+      <div class="hbar-row"><div class="hbar-head"><span class="hbar-name">d1-3B</span><span class="hbar-value">2.6&nbsp;s, 83%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:17%"></div></div></div>
+      <div class="hbar-row"><div class="hbar-head"><span class="hbar-name">d3-nano 2.2B</span><span class="hbar-value">2.0&nbsp;s, 93%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:13%"></div></div></div>
+      <div class="hbar-row pick"><div class="hbar-head"><span class="hbar-name">d3-lite 0.85B</span><span class="hbar-value">0.53&nbsp;s, 93%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:3.5%"></div></div></div>
+      <figcaption id="speed-cap"><b>Figure 1.</b> Time to route one message: the decision models on 8 CPU threads, the LLM on the GPU (with a third of it on the CPU). d3-lite is as accurate as the LLM and about 30 times faster.</figcaption>
+    </figure>
+  </div>
 
   <section class="col prose" aria-labelledby="h-point">
     <h2 id="h-point">The point</h2>
-    <p>On this laptop a 0.85B decision model routes a message in half a second on the CPU, as accurately as the 8B LLM on my own messages and slightly less on harder ones, and its probabilities show when it is unsure. In front of the LLM, it settled about half the messages alone without lowering accuracy. It does not replace the LLM; it lets the agent skip the slow call when the answer is clear.</p>
-    <p><a href="https://github.com/oney-erge/LocalDeploy/tree/main/benchmarks/decision-routing">Next: the messages, every run's raw results, and how to rerun the test.</a></p>
+    <p>d3-lite from vLLM Semantic Router routes a message in half a second on the CPU, as accurately as the 8B LLM, and leaves the GPU to the LLM. YBM now asks it first and passes a message to the LLM only when d3-lite is less than 90% sure. In my tests that handled about half the messages without the LLM and lost no accuracy. With a spare GPU, d3-mini is the most accurate at 0.17&nbsp;s.</p>
+    <p><a href="https://github.com/oney-erge/LocalDeploy/tree/main/benchmarks/decision-routing">Next: the 98 messages, every result, and how to rerun the test.</a></p>
   </section>
 
   <section class="col prose refs-section" aria-labelledby="h-refs">
     <h2 id="h-refs">References</h2>
     <ol class="refs">
       <li id="ref-1"><span>vLLM Semantic Router, Decision 3.0 models: “<a href="https://huggingface.co/vllm-sr/d3-lite">d3-lite</a>” model card, Hugging Face, 2026; project repository <a href="https://github.com/vllm-project/semantic-router">vllm-project/semantic-router</a>.</span></li>
-      <li id="ref-2"><span>llama.cpp. 2026. “<a href="https://github.com/ggml-org/llama.cpp/pull/30383">model: support vllm d3 models</a>,” pull request 30383, merged October 12, 2026; GGUF files <a href="https://huggingface.co/ggml-org/vllm-d3-lite-GGUF">ggml-org/vllm-d3-lite-GGUF</a>.</span></li>
+      <li id="ref-2"><span>llama.cpp. 2026. “<a href="https://github.com/ggml-org/llama.cpp/pull/30383">model: support vllm d3 models</a>,” pull request 30383; tested with release b11976.</span></li>
       <li id="ref-3"><span>Liquid AI. 2026. “<a href="https://huggingface.co/LiquidAI/d1-3B">d1-3B</a>” model card, Hugging Face (LFM Open License v1.0).</span></li>
-      <li id="ref-4"><span>C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger. 2017. “<a href="https://arxiv.org/abs/1706.04599">On Calibration of Modern Neural Networks</a>,” ICML 2017.</span></li>
-      <li id="ref-5"><span>L. D. Brown, T. T. Cai, and A. DasGupta. 2001. “<a href="https://doi.org/10.1214/ss/1009213286">Interval Estimation for a Binomial Proportion</a>,” Statistical Science 16(2), 101-133.</span></li>
-      <li id="ref-6"><span>S. Bai et al. 2025. “<a href="https://arxiv.org/abs/2511.21631">Qwen3-VL Technical Report</a>,” arXiv:2511.21631.</span></li>
-      <li id="ref-7"><span>O. Erge, <a href="https://github.com/oney-erge/YBM">YBM</a> and <a href="https://github.com/oney-erge/LocalDeploy">LocalDeploy</a>. Messages, raw results and scripts in <a href="https://github.com/oney-erge/LocalDeploy/tree/main/benchmarks/decision-routing"><code>benchmarks/decision-routing</code></a>; llama.cpp b11976, Ryzen 9 5900HS, RTX 3080 Laptop GPU (8&nbsp;GB), Windows 10.</span></li>
+      <li id="ref-4"><span>S. Bai et al. 2025. “<a href="https://arxiv.org/abs/2511.21631">Qwen3-VL Technical Report</a>,” arXiv:2511.21631.</span></li>
+      <li id="ref-5"><span>O. Erge, <a href="https://github.com/oney-erge/LocalDeploy/tree/main/benchmarks/decision-routing">LocalDeploy <code>benchmarks/decision-routing</code></a>: the 98 messages, every run's raw results, model-file hashes and scripts.</span></li>
     </ol>
   </section>
 </article>
