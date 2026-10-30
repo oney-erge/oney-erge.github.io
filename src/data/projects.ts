@@ -21,6 +21,7 @@ export type Project = {
   detail: string;
   tags: string[];
   visual: ProjectVisual;
+  replay?: string;
 };
 
 export const projects: Project[] = [
@@ -62,22 +63,24 @@ export const projects: Project[] = [
     name: "AgentGymnasium",
     repo: "AgentGymnasium",
     field: "Agent evaluation",
-    outcome: "Bring AI agents and physics into the same experiment.",
+    outcome: "Watch an agent build, then compare what changed.",
     detail:
-      "An agent builds something in a simulated world, sees what happened, and gets another chance to improve it.",
-    tags: ["Agent evaluation", "Physics simulation", "Reproducible trials"],
+      "Run a physics challenge, inspect the agent's tool calls, and compare recorded attempts.",
+    tags: ["Agent evaluation", "Physics challenges", "Recorded evidence"],
     visual: "agentgymnasium",
+    replay: "https://oney-physics-replays.hazycow18.chatgpt.site/agentgymnasium.html",
   },
   {
     slug: "creature-lab-robot-morphology",
     name: "Creature Lab",
     repo: "Creature-Lab",
     field: "Robotics",
-    outcome: "Design, evolve, and test robots in a reproducible physics lab.",
+    outcome: "Build a robot and investigate why it fails.",
     detail:
-      "Edit a robot body, run it in physics, and trace a failure to the body, controller, task, or simulator.",
-    tags: ["Robot morphology", "Evolutionary search", "PyBullet"],
+      "Change a body, gait, or task, then compare and share the recorded evidence.",
+    tags: ["Robot design", "Failure lessons", "Reproducible trials"],
     visual: "creature",
+    replay: "https://oney-physics-replays.hazycow18.chatgpt.site/creature-lab.html",
   },
   {
     slug: "segcraft-semantic-segmentation",

@@ -57,12 +57,12 @@ export function ProjectVisual({ project }: { project: Project }) {
     return (
       <div className={`${className} ${styles.agentgymnasiumVisual}`}>
         <Image
-          src="/media/agentgymnasium-city.png"
-          alt="AgentGymnasium tiny city simulation preview"
+          src="/media/agentgymnasium-bridge.png"
+          alt="AgentGymnasium bridge challenge preview"
           fill
           className={styles.containImage}
         />
-        <span className={styles.visualCode}>CITY_PULSE / SCORE 100%</span>
+        <span className={styles.visualCode}>BRIDGE / SCRIPTED EXAMPLE</span>
       </div>
     );
   }

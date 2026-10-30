@@ -336,6 +336,7 @@ function ProjectCard({ project }: { project: Project }) {
           <h3><a className={styles.projectCardLink} href={`${GITHUB}/${project.repo}`} target="_blank" rel="noreferrer">{project.name} <Arrow /></a></h3>
           <p className={styles.projectOutcome}>{project.outcome}</p>
           <p className={styles.projectSummary}>{project.detail}</p>
+          {project.replay && <a className={styles.projectReplay} href={project.replay} target="_blank" rel="noreferrer">Watch recorded replay <Arrow /></a>}
           <ul className={styles.projectTags} aria-label={`${project.name} technologies`}>
             {project.tags.map((tag) => <li key={tag}>{tag}</li>)}
           </ul>

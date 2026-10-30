@@ -354,6 +354,18 @@
   line-height: 1.62;
 }
 
+.projectReplay {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  color: var(--ink);
+  font-size: var(--type-small);
+  font-weight: 680;
+}
+
 .projectTags {
   display: flex;
   flex-wrap: wrap;
