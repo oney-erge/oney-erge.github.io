@@ -75,12 +75,12 @@ export const writingSeries: WritingSeries[] = [
       "Two articles on using draft models to reduce expensive target-model passes.",
   },
   {
-    id: "local-agents",
-    title: "Running an Agent on a Laptop",
-    collectionLabel: "Local agents",
+    id: "decision-models",
+    title: "Local Decision Models",
+    collectionLabel: "Decision models",
     itemLabel: "Article",
     description:
-      "Measured choices for an agent that runs on a laptop: which model does which job, and what it costs.",
+      "Small local models that classify and route requests in place of an LLM, compared on a laptop CPU and GPU.",
   },
 ];
 
@@ -231,18 +231,18 @@ const allPosts: WritingPost[] = [
   {
     slug: "decision-model-message-routing",
     href: "/writing/decision-model-message-routing/",
-    title: "How a Decision Model Routes Agent Messages on a CPU",
-    searchTitle: "Routing LLM Agent Messages with a Small Decision Model on a CPU",
-    hook: "An 8B LLM took about 15 seconds to decide what each message to my local agent was. A 0.85B decision model did it on the CPU in half a second.",
+    title: "Routing Agent Messages with a Local Decision Model",
+    searchTitle: "Local Decision Models for Routing Agent Messages: CPU and GPU Comparison",
+    hook: "An 8B LLM took about 15 seconds to classify each message for my agent. I compared 11 local decision models; d3-lite does it in half a second on the CPU.",
     description:
-      "A comparison of open decision models for routing a local agent's messages, measured on a laptop CPU and GPU against an 8B LLM, with the data.",
-    seriesId: "local-agents",
+      "11 open decision models compared with an 8B LLM for classifying an agent's messages: accuracy and time on a laptop CPU and GPU, with the data.",
+    seriesId: "decision-models",
     part: 1,
     status: "published",
     datePublished: "2026-10-29T18:00:00-05:00",
     dateModified: "2026-10-29T18:00:00-05:00",
     dateLabel: "October 29, 2026",
-    readingTime: "4 min read",
+    readingTime: "3 min read",
     tags: ["Decision models", "LLM agents", "llama.cpp"],
     cover: {
       label: "Message routing",

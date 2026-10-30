@@ -393,6 +393,30 @@
   .post .prose .procedure li { grid-template-columns: 1fr; gap: 0.1rem; }
 }
 
+/* Horizontal bars drawn in HTML, so labels stay readable at any width */
+.post .hbars { display: grid; gap: 1rem; padding: clamp(1rem, 3vw, 1.6rem); background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.9rem; }
+.post .hbar-row { display: grid; gap: 0.35rem; }
+.post .hbar-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; font-size: 0.92rem; }
+.post .hbar-name { color: var(--p-ink); font-weight: 650; }
+.post .hbar-value { color: var(--p-muted); font-family: var(--p-mono); font-size: 0.85rem; white-space: nowrap; }
+.post .hbar-track { height: 0.85rem; background: var(--p-surface-muted); border-radius: 0.45rem; overflow: hidden; }
+.post .hbar-fill { height: 100%; min-width: 6px; background: var(--p-line-strong); border-radius: 0.45rem; }
+.post .hbar-row.llm .hbar-fill { background: var(--p-vocab); }
+.post .hbar-row.pick .hbar-fill { background: var(--p-kv); }
+.post .hbar-row.pick .hbar-name { color: var(--p-kv); }
+
+/* The row a table recommends */
+.post tr.pick th, .post tr.pick td { background: var(--p-kv-soft); color: var(--p-ink); font-weight: 650; }
+
+/* A worked example as label/value pairs */
+.post .routing-example { display: grid; grid-template-columns: max-content 1fr; gap: 0.55rem 1.2rem; margin: 0; padding: 1rem 1.2rem; background: var(--p-surface); border: 1px solid var(--p-line); border-radius: 0.8rem; font-size: 0.95rem; line-height: 1.55; }
+.post .routing-example dt { color: var(--p-muted); font-weight: 650; }
+.post .routing-example dd { margin: 0; color: var(--p-ink); }
+@media (max-width: 600px) {
+  .post .routing-example { grid-template-columns: 1fr; gap: 0.15rem; }
+  .post .routing-example dd + dt { margin-top: 0.55rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .post .stack > span, .post .kvcell { transition: none; }
 }
