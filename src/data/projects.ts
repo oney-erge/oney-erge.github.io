@@ -22,6 +22,8 @@ export type Project = {
   tags: string[];
   visual: ProjectVisual;
   replay?: string;
+  /** Text of the replay link; defaults to "Watch recorded replay". */
+  replayLabel?: string;
 };
 
 export const projects: Project[] = [
@@ -75,12 +77,13 @@ export const projects: Project[] = [
     name: "Creature Lab",
     repo: "Creature-Lab",
     field: "Robotics",
-    outcome: "Build a robot and investigate why it fails.",
+    outcome: "Shove a real robot, see why it fell, and prove the fix.",
     detail:
-      "Change a body, gait, or task, then compare and share the recorded evidence.",
-    tags: ["Robot design", "Failure lessons", "Reproducible trials"],
+      "Runs published robots with their own trained policies, explains each fall, and tests the fix.",
+    tags: ["Real robots", "Fall diagnosis", "What-if runs"],
     visual: "creature",
-    replay: "https://oney-physics-replays.hazycow18.chatgpt.site/creature-lab.html",
+    replay: "/media/creature-lab-tour.mp4",
+    replayLabel: "Watch the 1-minute tour",
   },
   {
     slug: "segcraft-semantic-segmentation",

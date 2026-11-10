@@ -73,10 +73,10 @@ export function ProjectVisual({ project }: { project: Project }) {
         <LoopingVideo
           src="/media/creature-lab-demo.mp4"
           poster="/media/creature-lab-poster.webp"
-          label="Creature Lab quadruped simulation"
+          label="Creature Lab: a Unitree G1 humanoid takes a 150 N shove and falls while the side panel explains why; a gentler shove then plays beside it and the robot keeps walking"
           className={`${styles.previewVideo} ${styles.coverImage}`}
         />
-        <span className={styles.visualCode}>RUN / OBSERVE / DIAGNOSE</span>
+        <span className={styles.visualCode}>SHOVE / EXPLAIN / FIX</span>
       </div>
     );
   }
