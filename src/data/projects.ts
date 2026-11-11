@@ -24,6 +24,9 @@ export type Project = {
   replay?: string;
   /** Text of the replay link; defaults to "Watch recorded replay". */
   replayLabel?: string;
+  /** A page of this site that runs the project in the browser, and the text of its link. */
+  demo?: string;
+  demoLabel?: string;
 };
 
 export const projects: Project[] = [
@@ -77,13 +80,15 @@ export const projects: Project[] = [
     name: "Creature Lab",
     repo: "Creature-Lab",
     field: "Robotics",
-    outcome: "Shove a real robot, see why it fell, and prove the fix.",
+    outcome: "Stress-test a real robot, see why it fell, and prove the fix.",
     detail:
       "Runs published robots with their own trained policies, explains each fall, and tests the fix.",
     tags: ["Real robots", "Fall diagnosis", "What-if runs"],
     visual: "creature",
     replay: "/media/creature-lab-tour.mp4",
     replayLabel: "Watch the 1-minute tour",
+    demo: "/demo/creature-lab/",
+    demoLabel: "Try the recorded demo",
   },
   {
     slug: "segcraft-semantic-segmentation",

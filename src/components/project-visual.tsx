@@ -12,7 +12,7 @@ export function ProjectVisual({ project }: { project: Project }) {
         <LoopingVideo
           src="/media/ybm-demo.mp4"
           poster="/media/ybm-demo-poster.webp"
-          label="YBM local agent console showing policy-protected chat and task controls"
+          label="YBM: a request to organize a Downloads folder, an approval in the console and on a phone, then a receipt of every file it moved"
           className={`${styles.previewVideo} ${styles.coverImage}`}
         />
         <span className={styles.visualBadge}>Policy protected</span>
@@ -56,13 +56,13 @@ export function ProjectVisual({ project }: { project: Project }) {
   if (project.visual === "agentgymnasium") {
     return (
       <div className={`${className} ${styles.agentgymnasiumVisual}`}>
-        <Image
-          src="/media/agentgymnasium-bridge.png"
-          alt="AgentGymnasium bridge challenge preview"
-          fill
-          className={styles.containImage}
+        <LoopingVideo
+          src="/media/agentgymnasium-replay.mp4"
+          poster="/media/agentgymnasium-replay-poster.webp"
+          label="AgentGymnasium bridge replay: the camera follows a crate down a ramp and across the deck the agent built, which glows where the crate presses on it"
+          className={`${styles.previewVideo} ${styles.coverImage}`}
         />
-        <span className={styles.visualCode}>BRIDGE / SCRIPTED EXAMPLE</span>
+        <span className={styles.visualCode}>BRIDGE / OFFLINE EXAMPLE</span>
       </div>
     );
   }
@@ -73,10 +73,10 @@ export function ProjectVisual({ project }: { project: Project }) {
         <LoopingVideo
           src="/media/creature-lab-demo.mp4"
           poster="/media/creature-lab-poster.webp"
-          label="Creature Lab: a Unitree G1 humanoid takes a 150 N shove and falls while the side panel explains why; a gentler shove then plays beside it and the robot keeps walking"
+          label="Creature Lab: two policies of a Unitree G1 humanoid take the same 400 N shove, one falls and one keeps walking; then the G1 trips on stairs and steps into a gap between stepping stones"
           className={`${styles.previewVideo} ${styles.coverImage}`}
         />
-        <span className={styles.visualCode}>SHOVE / EXPLAIN / FIX</span>
+        <span className={styles.visualCode}>TEST / EXPLAIN / FIX</span>
       </div>
     );
   }

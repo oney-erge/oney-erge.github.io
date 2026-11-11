@@ -337,6 +337,7 @@ function ProjectCard({ project }: { project: Project }) {
           <p className={styles.projectOutcome}>{project.outcome}</p>
           <p className={styles.projectSummary}>{project.detail}</p>
           {project.replay && <a className={styles.projectReplay} href={project.replay} target="_blank" rel="noreferrer">{project.replayLabel ?? "Watch recorded replay"} <Arrow /></a>}
+          {project.demo && <a className={styles.projectReplay} href={project.demo} target="_blank" rel="noreferrer">{project.demoLabel ?? "Try the recorded demo"} <Arrow /></a>}
           <ul className={styles.projectTags} aria-label={`${project.name} technologies`}>
             {project.tags.map((tag) => <li key={tag}>{tag}</li>)}
           </ul>
