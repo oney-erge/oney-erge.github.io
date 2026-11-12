@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Recorded demos exported by other projects (minified, generated).
+    "public/demo/**",
   ]),
 ]);
 
