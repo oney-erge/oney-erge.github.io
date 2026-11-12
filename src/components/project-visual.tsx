@@ -12,10 +12,10 @@ export function ProjectVisual({ project }: { project: Project }) {
         <LoopingVideo
           src="/media/ybm-demo.mp4"
           poster="/media/ybm-demo-poster.webp"
-          label="YBM: a request to organize a Downloads folder, an approval in the console and on a phone, then a receipt of every file it moved"
+          label="YBM organizing a Downloads folder, a real Qwen3.5 9B run replayed at its recorded speed: the plan, an approval in the console and on a phone, then a receipt of every file it moved"
           className={`${styles.previewVideo} ${styles.coverImage}`}
         />
-        <span className={styles.visualBadge}>Policy protected</span>
+        <span className={styles.visualBadge}>Asks first · Qwen3.5 9B, replayed</span>
       </div>
     );
   }
