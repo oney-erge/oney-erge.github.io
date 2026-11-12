@@ -59,10 +59,10 @@ export function ProjectVisual({ project }: { project: Project }) {
         <LoopingVideo
           src="/media/agentgymnasium-replay.mp4"
           poster="/media/agentgymnasium-replay-poster.webp"
-          label="AgentGymnasium bridge replay: the camera follows a crate down a ramp and across the deck the agent built, which glows where the crate presses on it"
+          label="AgentGymnasium: Qwen3.5 9B, a local model on a laptop CPU, solves the bridge challenge: the crate rolls down the ramp and across the decks the model built over the ravine, which glow under its weight, to the flag"
           className={`${styles.previewVideo} ${styles.coverImage}`}
         />
-        <span className={styles.visualCode}>BRIDGE / OFFLINE EXAMPLE</span>
+        <span className={styles.visualCode}>BRIDGE / QWEN3.5 9B, LOCAL</span>
       </div>
     );
   }
