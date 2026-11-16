@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "repository": {"id": "oney-erge/oney-erge.github.io", "owner": "oney-erge", "maintenance": "unclassified", "interfaces": ["browser-ui", "static-content"]},
+  "capabilities": ["static-content"],
+  "components": [{"id": "website", "root": "."}],
+  "environment": {"source": "package.json", "deployment": "static export; publishing is a separate action"},
+  "checks": {
+    "lint": {"argv": ["npm", "run", "lint"], "cwd": ".", "timeout_seconds": 180, "lane": "fast", "effects": "local-cache"},
+    "writing": {"argv": ["npm", "run", "check:writing"], "cwd": ".", "timeout_seconds": 120, "lane": "fast", "effects": "read-only"},
+    "typecheck": {"argv": ["npm", "run", "typecheck"], "cwd": ".", "timeout_seconds": 180, "lane": "fast", "effects": "local-cache"}
+  },
+  "journeys": [{"id": "discover-project", "user_outcome": "Discover a project and open its source", "checks": ["lint", "writing", "typecheck"], "additional_evidence_needed": ["mobile and desktop browser journey", "keyboard and screen-reader review", "link and generated metadata checks after build", "field performance baseline"]}],
+  "evidence": {"status": "not-collected-by-repoctl", "note": "Static checks do not establish that a visitor can complete the journey."},
+  "agent": {"instruction_entry": "AGENTS.md", "command_trust": "external-to-repository"}
+}
