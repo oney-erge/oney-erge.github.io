@@ -40,6 +40,10 @@ export const projects: Project[] = [
       "Message it from the web, Telegram, or WhatsApp. It works on your files, web pages, and programs, and records what it did.",
     tags: ["Local 9B model", "Approvals and receipts", "Measured results"],
     visual: "ybm",
+    replay: "/media/ybm-tour.mp4",
+    replayLabel: "Watch the 80-second tour",
+    demo: "/demo/ybm/",
+    demoLabel: "Try the replays",
   },
   {
     slug: "afterimage-full-precision-llm-inference",
