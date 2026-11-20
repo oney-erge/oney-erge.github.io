@@ -57,10 +57,10 @@ export const projects: Project[] = [
     name: "LocalDeploy",
     repo: "LocalDeploy",
     field: "Local AI",
-    outcome: "A complete local model deployment and benchmarking suite.",
+    outcome: "Pick a local model, test it on your machine, and connect it to your apps.",
     detail:
-      "It checks your hardware, estimates which models fit, and measures the speed, quality, and memory you actually get.",
-    tags: ["Hardware-aware deployment", "Model benchmarking", "Runtime orchestration"],
+      "It estimates which models fit, measures the speed, quality, and memory you actually get, then serves the winner through several local APIs.",
+    tags: ["Hardware-aware deployment", "Model benchmarking", "Local model APIs"],
     visual: "localdeploy",
   },
   {
