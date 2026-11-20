@@ -82,14 +82,6 @@ export const writingSeries: WritingSeries[] = [
     description:
       "Small local models that classify and route requests in place of an LLM, compared on a laptop CPU and GPU.",
   },
-  {
-    id: "local-assistant",
-    title: "A Personal Assistant on a Local Model",
-    collectionLabel: "Local assistant",
-    itemLabel: "Article",
-    description:
-      "Measurements and failures from running an assistant on a 9B model and an 8 GB laptop GPU.",
-  },
 ];
 
 /** Every post, published or upcoming, in series order. */
@@ -257,28 +249,6 @@ const allPosts: WritingPost[] = [
       metric: "0.5 s",
       caption: "d3-lite · 8 CPU threads",
       note: "The 8B LLM takes about 15 s",
-    },
-  },
-  {
-    slug: "ybm-assistant-9b-results",
-    href: "/writing/ybm-assistant-9b-results/",
-    title: "A Personal Assistant on a 9B Model: Results and Failures",
-    hook: "YBM runs on a 9B model and an 8 GB laptop GPU. It passed 15 of 20 requests on an exam I sealed before the work, short of my target of 18. These are the results and two failures.",
-    description:
-      "Results of a personal assistant on Qwen3.5 9B and an 8 GB laptop GPU: 30 of 32 everyday requests, 15 of 20 on a sealed exam, two failures with their fixes, and what is not measured.",
-    seriesId: "local-assistant",
-    part: 1,
-    status: "published",
-    datePublished: "2026-11-19T22:00:00-06:00",
-    dateModified: "2026-11-19T22:00:00-06:00",
-    dateLabel: "November 19, 2026",
-    readingTime: "4 min read",
-    tags: ["LLM agents", "Evaluation", "llama.cpp"],
-    cover: {
-      label: "Sealed exam",
-      metric: "15 of 20",
-      caption: "Qwen3.5 9B · 8 GB GPU",
-      note: "My target was 18",
     },
   },
 ];
