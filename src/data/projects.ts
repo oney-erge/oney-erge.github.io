@@ -35,10 +35,10 @@ export const projects: Project[] = [
     name: "YBM",
     repo: "YBM",
     field: "Agent systems",
-    outcome: "A policy-protected local agent that keeps working toward the task.",
+    outcome: "An assistant for your own computer that runs on a local model.",
     detail:
-      "Talk to it from the web, Telegram, or WhatsApp, and approve important actions before they run.",
-    tags: ["Policy-gated tools", "Self-extending workflows", "Local-first"],
+      "Message it from the web, Telegram, or WhatsApp. It works on your files, web pages, and programs, and records what it did.",
+    tags: ["Local 9B model", "Approvals and receipts", "Measured results"],
     visual: "ybm",
   },
   {
