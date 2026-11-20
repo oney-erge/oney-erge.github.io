@@ -1,0 +1,102 @@
+<article class="post" id="post-root">
+  <header class="col hero">
+    <h1>A Personal Assistant on a 9B Model: Results and Failures</h1>
+    <p class="deck">I run YBM, an assistant for my own computer, on a 9B model and an 8&nbsp;GB laptop GPU. It passed 30 of 32 everyday requests, and 15 of 20 on an exam I sealed before the work, short of my target of 18. This note gives the results, two failures I found, and what I have not measured.</p>
+    <div class="byline"><span>Oney Erge</span><time datetime="2026-11-19">November 19, 2026</time><span>4 min read</span></div>
+  </header>
+
+  <div class="col prose">
+    <p>I built <a href="https://github.com/oney-erge/YBM">YBM</a> so that I can message my own computer from my phone and have it work on the files, web pages, and programs there. It uses a small model, Qwen3.5 9B <a class="cite" href="#ref-1">[1]</a>, so the work costs nothing and my files stay on my machine. llama.cpp runs the model on the laptop's RTX 3080 GPU, which has 8&nbsp;GB of memory.</p>
+    <p>A small model sometimes misreads a request, and sometimes says it did something it did not do. Most of the code around the model exists to catch that. This note is about how I measure whether it works, and what I found when it did not.</p>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-test">
+    <h2 id="h-test">The test</h2>
+    <p>A <strong>suite</strong> is a fixed list of requests in plain words. Each one is sent to the running assistant through its real Telegram channel, and code checks the outcome: the reply, the files that changed, and the approvals that were asked. Benchmarks for tool-using agents, such as &tau;-bench <a class="cite" href="#ref-2">[2]</a>, also judge the end state of the work and not the wording of the answer.</p>
+    <p>One suite is a <strong>sealed exam</strong>. I wrote its 20 requests and froze them (their hash is in the repository) before I did the work they test, and I ran them once, so I could not tune the assistant to their wording. I wrote both the assistant and the suites, so these are my own results on one machine.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-results">
+    <h2 id="h-results">Results</h2>
+  </section>
+
+  <div class="wide block">
+    <p class="tcap"><b>Table 1.</b> Requests passed in the last full run of each suite on November&nbsp;19, 2026. Each suite changed between runs, so a row is a snapshot of one build, not a trend. Data: <a class="cite" href="#ref-7">[7]</a>.</p>
+    <div class="tablewrap">
+      <table class="responsive-table">
+        <thead><tr><th scope="col">Suite</th><th scope="col" class="num">Requests</th><th scope="col" class="num">Passed</th><th scope="col">What it asks</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Everyday</th><td data-label="Requests" class="num">32</td><td data-label="Passed" class="num">30</td><td data-label="What it asks">Find files, count the Steam games, read five websites, build a small app</td></tr>
+          <tr><th scope="row">Longer requests</th><td data-label="Requests" class="num">14</td><td data-label="Passed" class="num">12</td><td data-label="What it asks">Plan a pool, retry after a failure, find a device on the network</td></tr>
+          <tr><th scope="row">Memory</th><td data-label="Requests" class="num">8</td><td data-label="Passed" class="num">8</td><td data-label="What it asks">A fact comes back; a fact that changes keeps its history (7 on the run before)</td></tr>
+          <tr class="pick"><th scope="row">Sealed exam</th><td data-label="Requests" class="num">20</td><td data-label="Passed" class="num">15</td><td data-label="What it asks">Revise a plan twice, retry differently, projects that come back. My target was 18.</td></tr>
+          <tr><th scope="row">Browser and desktop</th><td data-label="Requests" class="num">10</td><td data-label="Passed" class="num">5 to 9</td><td data-label="What it asks">Five runs; the desktop cases need an unlocked screen</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col prose">
+    <p>The sealed exam is the result I trust most, because I could not tune the assistant to it, and it fell short. Table 2 lists its five misses. Three have a traced cause and a fix, and one has a cause I have not proven. The fifth was a correct answer in words the sealed list did not accept.</p>
+  </div>
+
+  <div class="wide block">
+    <p class="tcap"><b>Table 2.</b> The five misses of the sealed exam. The exam is not rerun, because a sealed exam is run once. Data: <a class="cite" href="#ref-7">[7]</a>.</p>
+    <div class="tablewrap">
+      <table class="responsive-table">
+        <thead><tr><th scope="col">Request</th><th scope="col">What happened</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Revise a plan twice</th><td data-label="What happened">The check on the answer's claims took &ldquo;will be generated&rdquo; for a finished write, and the task stalled</td><td data-label="Status">Fixed</td></tr>
+          <tr><th scope="row">&ldquo;I live in Dallas.&rdquo;</th><td data-label="What happened">3.5 minutes to become a task (see below)</td><td data-label="Status">Fixed</td></tr>
+          <tr><th scope="row">Find a paper, tell me when it ends</th><td data-label="What happened">A question about a date started a folder watch (see below)</td><td data-label="Status">Fixed</td></tr>
+          <tr><th scope="row">Rename files with a script</th><td data-label="What happened">A code-writing step ran 12 minutes with no model call logged</td><td data-label="Status">Cause not proven</td></tr>
+          <tr><th scope="row">Retry when notes are missing</th><td data-label="What happened">The reply said no quote was found, in words the sealed list of accepted phrases did not hold</td><td data-label="Status">Counted as a miss, as sealed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section class="col prose" aria-labelledby="h-field">
+    <h2 id="h-field">A field the model should have left empty</h2>
+    <p>To make the model's answer parse, llama.cpp can restrict decoding to text that fits a grammar, here a JSON schema <a class="cite" href="#ref-3">[3]</a> <a class="cite" href="#ref-4">[4]</a>. My model server has one slot, so it decodes one request at a time, and a slow request holds up every other call.</p>
+    <p>The short message &ldquo;I live in Dallas.&rdquo; took 3.5 minutes to become a task. The call that keeps facts about me returns a list, and each item has an <code>id</code> field that means the id of a fact already on the list. With an empty list the model had no id to give. It wrote about 1,400 tokens of random letters and digits instead.</p>
+    <p>Under the grammar the server decoded them at 7 tokens per second. The same model decodes about 45 without one. Every other call waited behind it, and giving up on the call did not help, because the server kept writing. The same call without a grammar took 1.8&nbsp;s.</p>
+    <p>The fix was to give every field the model writes under a grammar a length. On the same four messages, the call now takes 2.9&nbsp;s and 25 tokens, where it took 198&nbsp;s and 1,366 tokens.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-yesno">
+    <h2 id="h-yesno">A yes or no that no threshold could separate</h2>
+    <p>A <strong>decision model</strong> reads a text and a question and returns a probability for each answer in one pass, without writing any text <a class="cite" href="#ref-5">[5]</a>. YBM runs one on the CPU to route messages, which I wrote about in <a class="cite" href="#ref-6">[6]</a>.</p>
+    <p>One skill starts a watch on a folder when the decision model says yes to &ldquo;is the user asking to be told later when something changes?&rdquo; The exam's request only asked for a date: &ldquo;find the paper about the dishwasher's cover and tell me when it ends.&rdquo; The model said yes at 0.89. It scored real watch requests from 0.73 to 0.92, so no threshold could separate the two.</p>
+    <p>I reworded the question to say what a watch is, a message each time something new happens, and that a date which can be looked up now is not one. I also added seven near misses to the set I calibrate with. Afterwards the lowest yes was 0.57 and the highest no was 0.41. On a separate probe of 24 requests it caught 10 of 10 watches and took 0 of 14 look-ups for one. Before, it took 1 of 14. The margin is still thin.</p>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-not">
+    <h2 id="h-not">What I have not measured</h2>
+    <ul>
+      <li>Other GPUs and other models. The 9B is the only model I measured end to end.</li>
+      <li>macOS and Linux against a real model. Continuous integration starts YBM there, but no task has run on a real model.</li>
+      <li>Runs longer than a day. A 600-page research run produced a thin report.</li>
+      <li>A comparison with any other assistant. I have not run the same requests on one, so I make no claim about how YBM compares.</li>
+    </ul>
+  </section>
+
+  <section class="col prose" aria-labelledby="h-point">
+    <h2 id="h-point">The point</h2>
+    <p>A 9B model on an 8&nbsp;GB laptop GPU runs an assistant that passed 30 of 32 everyday requests, and 15 of 20 on a sealed exam. The three failures I traced were not the model misunderstanding a request. They came from what surrounds it: a check that misread a promise as a claim, a field that cost minutes, and a yes or no whose scores overlapped. All three fixes are in the code around the model.</p>
+    <p><a href="https://github.com/oney-erge/YBM/blob/main/docs/MEASURED.md">Next: the full results page, with every miss and what I have not measured.</a></p>
+  </section>
+
+  <section class="col prose refs-section" aria-labelledby="h-refs">
+    <h2 id="h-refs">References</h2>
+    <ol class="refs">
+      <li id="ref-1"><span>Qwen. 2026. &ldquo;<a href="https://huggingface.co/Qwen/Qwen3.5-9B">Qwen3.5-9B</a>&rdquo; model card, Hugging Face (Apache-2.0).</span></li>
+      <li id="ref-2"><span>S. Yao et al. 2024. &ldquo;<a href="https://arxiv.org/abs/2406.12045">&tau;-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains</a>,&rdquo; arXiv:2406.12045.</span></li>
+      <li id="ref-3"><span>llama.cpp. &ldquo;<a href="https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md">GBNF grammars</a>,&rdquo; repository documentation.</span></li>
+      <li id="ref-4"><span>B. T. Willard and R. Louf. 2023. &ldquo;<a href="https://arxiv.org/abs/2307.09702">Efficient Guided Generation for Large Language Models</a>,&rdquo; arXiv:2307.09702.</span></li>
+      <li id="ref-5"><span>vLLM Semantic Router. 2026. &ldquo;<a href="https://huggingface.co/vllm-sr/d3-lite">d3-lite</a>&rdquo; model card, Hugging Face.</span></li>
+      <li id="ref-6"><span>O. Erge. 2026. &ldquo;<a href="/writing/decision-model-message-routing/">Routing Agent Messages with a Local Decision Model</a>&rdquo; and <a href="https://github.com/oney-erge/LocalDeploy/tree/main/benchmarks/decision-routing">LocalDeploy <code>benchmarks/decision-routing</code></a>.</span></li>
+      <li id="ref-7"><span>O. Erge. 2026. YBM, results page <a href="https://github.com/oney-erge/YBM/blob/main/docs/MEASURED.md"><code>docs/MEASURED.md</code></a>, with the suites, the result folders they were read from, and the changelog entries for the fixes.</span></li>
+    </ol>
+  </section>
+</article>
