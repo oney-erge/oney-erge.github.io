@@ -269,9 +269,9 @@ const allPosts: WritingPost[] = [
     seriesId: "local-assistant",
     part: 1,
     status: "published",
-    datePublished: "2026-11-20T12:00:00-06:00",
-    dateModified: "2026-11-20T12:00:00-06:00",
-    dateLabel: "November 20, 2026",
+    datePublished: "2026-11-19T22:00:00-06:00",
+    dateModified: "2026-11-19T22:00:00-06:00",
+    dateLabel: "November 19, 2026",
     readingTime: "4 min read",
     tags: ["LLM agents", "Evaluation", "llama.cpp"],
     cover: {
