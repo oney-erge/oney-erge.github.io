@@ -60,3 +60,4 @@ next-env.d.ts
 !/src/app/writing/speculative-decoding-streamed-inference/
 !/src/app/writing/speculative-decoding-variants/
 !/src/app/writing/decision-model-message-routing/
+!/src/app/writing/ybm-assistant-9b-results/
